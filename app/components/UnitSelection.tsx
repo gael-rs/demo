@@ -26,13 +26,12 @@ export default function UnitSelection() {
           onClick={() => selectUnit(UNIT)}
           className="bg-slate-800 rounded-2xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-emerald-500 transition-all active:scale-[0.99]"
         >
-          <div className="aspect-video bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center">
-            <div className="text-center">
-              <svg className="w-16 h-16 text-slate-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-              <p className="text-slate-500 text-sm">Imagen del inmueble</p>
-            </div>
+          <div className="aspect-video bg-slate-700 overflow-hidden">
+            <img
+              src={UNIT.image}
+              alt={UNIT.name}
+              className="w-full h-full object-cover"
+            />
           </div>
 
           <div className="p-5">
@@ -70,9 +69,6 @@ export default function UnitSelection() {
           </div>
         </div>
 
-        <p className="text-center text-slate-500 text-xs mt-6">
-          Demo: Solo 1 unidad disponible
-        </p>
       </div>
     </div>
   );

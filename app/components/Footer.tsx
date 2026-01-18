@@ -61,9 +61,6 @@ export default function Footer() {
           <p className="text-slate-500 text-sm">
             © 2025 Homested. Todos los derechos reservados.
           </p>
-          <p className="text-slate-600 text-xs">
-            Demo para inversionistas — Estado simulado
-          </p>
         </div>
       </div>
     </footer>

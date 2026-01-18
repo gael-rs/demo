@@ -112,9 +112,6 @@ export default function AccessGranted() {
           </button>
         </div>
 
-        <p className="text-center text-slate-500 text-xs mt-4">
-          Acceso simulado — Demo para inversionistas
-        </p>
       </div>
     </div>
   );

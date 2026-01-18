@@ -81,7 +81,6 @@ export default function IdentityVerification() {
               <div>
                 <p className="text-red-400 font-medium">Verificación fallida</p>
                 <p className="text-slate-400 text-sm">No pudimos verificar tu identidad. Intenta de nuevo.</p>
-                <p className="text-slate-500 text-xs mt-1">Estado simulado para demo</p>
               </div>
             </div>
           </div>
@@ -111,9 +110,6 @@ export default function IdentityVerification() {
           </button>
         )}
 
-        <p className="text-center text-slate-500 text-xs mt-4">
-          Verificación simulada — No se capturan datos reales
-        </p>
       </div>
     </div>
   );

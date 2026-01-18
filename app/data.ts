@@ -6,7 +6,7 @@ export const UNIT: Unit = {
   city: 'Ciudad de México',
   address: 'Colonia Roma Norte, CDMX',
   basePrice: 850,
-  image: '/unit.jpg',
+  image: 'https://images.unsplash.com/photo-1705321963943-de94bb3f0dd3?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8c2FsYSUyMGRlJTIwZXN0YXIlMjBtb2Rlcm5hfGVufDB8fDB8fHww',
   amenities: ['WiFi', 'Cocina equipada', 'Aire acondicionado', 'Smart TV'],
 };
 

@@ -74,7 +74,6 @@ export default function Payment() {
               <div>
                 <p className="text-red-400 font-medium">Pago fallido</p>
                 <p className="text-slate-400 text-sm">El pago no pudo procesarse. Intenta de nuevo.</p>
-                <p className="text-slate-500 text-xs mt-1">Estado simulado para demo</p>
               </div>
             </div>
           </div>
@@ -117,9 +116,6 @@ export default function Payment() {
           </button>
         )}
 
-        <p className="text-center text-slate-500 text-xs mt-4">
-          Pago simulado — No se realizará ningún cargo real
-        </p>
       </div>
     </div>
   );

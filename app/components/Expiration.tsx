@@ -78,7 +78,7 @@ export default function Expiration() {
         </div>
 
         <p className="text-center text-slate-500 text-xs mt-6">
-          Gracias por usar Homested — Estado simulado para demo
+          Gracias por usar Homested
         </p>
       </div>
     </div>

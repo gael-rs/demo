@@ -161,9 +161,6 @@ export default function ExtendStay() {
           Pagar extensión ${additionalCost.toLocaleString()} MXN
         </button>
 
-        <p className="text-center text-slate-500 text-xs mt-4">
-          Pago simulado — Demo para inversionistas
-        </p>
       </div>
     </div>
   );

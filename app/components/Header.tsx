@@ -1,13 +1,16 @@
 'use client';
 
 import { useState } from 'react';
+import { useBooking } from '../context';
 
 interface HeaderProps {
   onCtaClick?: () => void;
 }
 
 export default function Header({ onCtaClick }: HeaderProps) {
+  const { authState, logout, goToStep } = useBooking();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const menuItems = [
     { label: 'Cómo funciona', href: '#como-funciona' },
@@ -15,6 +18,17 @@ export default function Header({ onCtaClick }: HeaderProps) {
     { label: 'Precios', href: '#precios' },
     { label: 'FAQ', href: '#faq' },
   ];
+
+  const handleLoginClick = () => {
+    setIsMenuOpen(false);
+    goToStep('auth');
+  };
+
+  const handleLogout = () => {
+    setIsUserMenuOpen(false);
+    setIsMenuOpen(false);
+    logout();
+  };
 
   return (
     <>
@@ -41,7 +55,58 @@ export default function Header({ onCtaClick }: HeaderProps) {
             ))}
           </nav>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            {/* Auth Button - Desktop */}
+            {authState.isAuthenticated && authState.user ? (
+              <div className="relative hidden sm:block">
+                <button
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-sm font-medium">
+                      {authState.user.name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <span className="text-white text-sm font-medium max-w-[100px] truncate">
+                    {authState.user.name.split(' ')[0]}
+                  </span>
+                  <svg className={`w-4 h-4 text-slate-400 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {isUserMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-slate-800 border border-slate-700 rounded-xl shadow-xl overflow-hidden">
+                    <div className="px-4 py-3 border-b border-slate-700">
+                      <p className="text-white font-medium truncate">{authState.user.name}</p>
+                      <p className="text-slate-400 text-sm truncate">{authState.user.email}</p>
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full px-4 py-3 text-left text-slate-300 hover:bg-slate-700 hover:text-white transition-colors flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
+                      Cerrar sesión
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={handleLoginClick}
+                className="hidden sm:flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white transition-colors text-sm"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                Iniciar sesión
+              </button>
+            )}
+
+            {/* CTA Button - Desktop */}
             <button
               onClick={onCtaClick}
               className="hidden sm:block px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-medium rounded-lg transition-colors"
@@ -49,6 +114,7 @@ export default function Header({ onCtaClick }: HeaderProps) {
               Entrar a vivir
             </button>
 
+            {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="md:hidden p-2 text-slate-400 hover:text-white transition-colors"
@@ -67,19 +133,59 @@ export default function Header({ onCtaClick }: HeaderProps) {
           </div>
         </div>
 
+        {/* Mobile Menu */}
         {isMenuOpen && (
           <div className="md:hidden bg-slate-800 border-t border-slate-700">
             <nav className="flex flex-col px-6 py-4">
+              {/* User Info (Mobile) */}
+              {authState.isAuthenticated && authState.user && (
+                <div className="flex items-center gap-3 pb-4 mb-4 border-b border-slate-700">
+                  <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-medium">
+                      {authState.user.name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-white font-medium">{authState.user.name}</p>
+                    <p className="text-slate-400 text-sm">{authState.user.email}</p>
+                  </div>
+                </div>
+              )}
+
               {menuItems.map(item => (
                 <a
                   key={item.href}
                   href={item.href}
                   onClick={() => setIsMenuOpen(false)}
-                  className="py-3 text-slate-300 hover:text-white transition-colors border-b border-slate-700 last:border-0"
+                  className="py-3 text-slate-300 hover:text-white transition-colors border-b border-slate-700"
                 >
                   {item.label}
                 </a>
               ))}
+
+              {/* Auth Button (Mobile) */}
+              {authState.isAuthenticated ? (
+                <button
+                  onClick={handleLogout}
+                  className="py-3 text-slate-300 hover:text-white transition-colors border-b border-slate-700 text-left flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Cerrar sesión
+                </button>
+              ) : (
+                <button
+                  onClick={handleLoginClick}
+                  className="py-3 text-slate-300 hover:text-white transition-colors border-b border-slate-700 text-left flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  Iniciar sesión
+                </button>
+              )}
+
               <button
                 onClick={() => {
                   setIsMenuOpen(false);
@@ -93,6 +199,14 @@ export default function Header({ onCtaClick }: HeaderProps) {
           </div>
         )}
       </header>
+
+      {/* Overlay to close user menu */}
+      {isUserMenuOpen && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setIsUserMenuOpen(false)}
+        />
+      )}
     </>
   );
 }

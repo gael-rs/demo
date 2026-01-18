@@ -1,10 +1,19 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
-import { BookingState, BookingStep, Unit } from './types';
-import { calculatePrice, generateAccessCode, UNIT } from './data';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { BookingState, BookingStep, Unit, AuthState, LoginPayload, RegisterPayload } from './types';
+import { calculatePrice, generateAccessCode } from './data';
+import {
+  loginUser,
+  registerUser,
+  logoutUser,
+  checkSession,
+  persistSession,
+  clearSession,
+} from './services/auth.service';
 
 interface BookingContextType {
+  // Booking state
   state: BookingState;
   goToStep: (step: BookingStep) => void;
   selectUnit: (unit: Unit) => void;
@@ -14,9 +23,15 @@ interface BookingContextType {
   extendStay: (additionalDays: number) => void;
   simulateExpiration: () => void;
   reset: () => void;
+
+  // Auth state
+  authState: AuthState;
+  login: (payload: LoginPayload) => Promise<boolean>;
+  register: (payload: RegisterPayload) => Promise<boolean>;
+  logout: () => void;
 }
 
-const initialState: BookingState = {
+const initialBookingState: BookingState = {
   step: 'landing',
   selectedUnit: null,
   days: 1,
@@ -31,10 +46,44 @@ const initialState: BookingState = {
   daysRemaining: 0,
 };
 
+const initialAuthState: AuthState = {
+  isAuthenticated: false,
+  user: null,
+  loading: true,
+  error: null,
+};
+
 const BookingContext = createContext<BookingContextType | undefined>(undefined);
 
 export function BookingProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<BookingState>(initialState);
+  const [state, setState] = useState<BookingState>(initialBookingState);
+  const [authState, setAuthState] = useState<AuthState>(initialAuthState);
+
+  // Check for existing session on mount
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        const response = await checkSession();
+        if (response.success && response.user) {
+          setAuthState({
+            isAuthenticated: true,
+            user: response.user,
+            loading: false,
+            error: null,
+          });
+        } else {
+          setAuthState(prev => ({ ...prev, loading: false }));
+        }
+      } catch {
+        setAuthState(prev => ({ ...prev, loading: false }));
+      }
+    };
+    initAuth();
+  }, []);
+
+  // ============================================
+  // BOOKING FUNCTIONS
+  // ============================================
 
   const goToStep = (step: BookingStep) => {
     setState(prev => ({ ...prev, step }));
@@ -133,12 +182,102 @@ export function BookingProvider({ children }: { children: ReactNode }) {
   };
 
   const reset = () => {
-    setState(initialState);
+    setState(initialBookingState);
+  };
+
+  // ============================================
+  // AUTH FUNCTIONS
+  // ============================================
+
+  const login = async (payload: LoginPayload): Promise<boolean> => {
+    setAuthState(prev => ({ ...prev, loading: true, error: null }));
+
+    try {
+      const response = await loginUser(payload);
+
+      if (response.success && response.user && response.token) {
+        persistSession(response.user, response.token);
+        setAuthState({
+          isAuthenticated: true,
+          user: response.user,
+          loading: false,
+          error: null,
+        });
+        // Volver al landing después de login exitoso
+        setState(prev => ({ ...prev, step: 'landing' }));
+        return true;
+      } else {
+        setAuthState(prev => ({
+          ...prev,
+          loading: false,
+          error: response.error || 'Error al iniciar sesión',
+        }));
+        return false;
+      }
+    } catch {
+      setAuthState(prev => ({
+        ...prev,
+        loading: false,
+        error: 'Error de conexión. Intenta de nuevo.',
+      }));
+      return false;
+    }
+  };
+
+  const register = async (payload: RegisterPayload): Promise<boolean> => {
+    setAuthState(prev => ({ ...prev, loading: true, error: null }));
+
+    try {
+      const response = await registerUser(payload);
+
+      if (response.success && response.user && response.token) {
+        persistSession(response.user, response.token);
+        setAuthState({
+          isAuthenticated: true,
+          user: response.user,
+          loading: false,
+          error: null,
+        });
+        // Volver al landing después de registro exitoso
+        setState(prev => ({ ...prev, step: 'landing' }));
+        return true;
+      } else {
+        setAuthState(prev => ({
+          ...prev,
+          loading: false,
+          error: response.error || 'Error al crear cuenta',
+        }));
+        return false;
+      }
+    } catch {
+      setAuthState(prev => ({
+        ...prev,
+        loading: false,
+        error: 'Error de conexión. Intenta de nuevo.',
+      }));
+      return false;
+    }
+  };
+
+  const logout = async () => {
+    setAuthState(prev => ({ ...prev, loading: true }));
+    try {
+      await logoutUser();
+    } finally {
+      clearSession();
+      setAuthState({
+        isAuthenticated: false,
+        user: null,
+        loading: false,
+        error: null,
+      });
+    }
   };
 
   return (
     <BookingContext.Provider
       value={{
+        // Booking
         state,
         goToStep,
         selectUnit,
@@ -148,6 +287,11 @@ export function BookingProvider({ children }: { children: ReactNode }) {
         extendStay,
         simulateExpiration,
         reset,
+        // Auth
+        authState,
+        login,
+        register,
+        logout,
       }}
     >
       {children}

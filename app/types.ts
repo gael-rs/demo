@@ -1,5 +1,6 @@
 export type BookingStep =
   | 'landing'
+  | 'auth'
   | 'unit-selection'
   | 'days-selection'
   | 'payment'
@@ -37,4 +38,41 @@ export interface BookingState {
   accessCode: string | null;
   accessExpiry: Date | null;
   daysRemaining: number;
+}
+
+// ============================================
+// TIPOS DE AUTENTICACIÓN
+// ============================================
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  phone?: string;
+}
+
+export interface AuthState {
+  isAuthenticated: boolean;
+  user: User | null;
+  loading: boolean;
+  error: string | null;
+}
+
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+export interface RegisterPayload {
+  name: string;
+  email: string;
+  password: string;
+  phone?: string;
+}
+
+export interface AuthResponse {
+  success: boolean;
+  user?: User;
+  token?: string;
+  error?: string;
 }

@@ -1,0 +1,10 @@
+export { default as Landing } from './Landing';
+export { default as UnitSelection } from './UnitSelection';
+export { default as DaysSelection } from './DaysSelection';
+export { default as Payment } from './Payment';
+export { default as IdentityVerification } from './IdentityVerification';
+export { default as AccessGranted } from './AccessGranted';
+export { default as ExtendStay } from './ExtendStay';
+export { default as Expiration } from './Expiration';
+export { default as Header } from './Header';
+export { default as Footer } from './Footer';

@@ -8,6 +8,7 @@ interface BookingInputFieldProps {
   readOnly?: boolean;
   highlighted?: boolean;
   icon?: 'calendar' | 'dollar';
+  currency?: 'CLP' | 'USD';
 }
 
 export default function BookingInputField({
@@ -18,8 +19,16 @@ export default function BookingInputField({
   readOnly = false,
   highlighted = false,
   icon,
+  currency = 'CLP',
 }: BookingInputFieldProps) {
   const formatCurrency = (val: number): string => {
+    if (currency === 'USD') {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 0,
+      }).format(val);
+    }
     return new Intl.NumberFormat('es-CL', {
       style: 'currency',
       currency: 'CLP',

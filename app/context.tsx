@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { BookingState, BookingStep, Unit, AuthState, LoginPayload, RegisterPayload } from './types';
 import { calculatePrice, generateAccessCode } from './data';
 import {
@@ -30,6 +30,11 @@ interface BookingContextType {
   login: (payload: LoginPayload) => Promise<boolean>;
   register: (payload: RegisterPayload) => Promise<boolean>;
   logout: () => void;
+
+  // Currency state
+  currency: 'CLP' | 'USD';
+  setCurrency: (currency: 'CLP' | 'USD') => void;
+  convertPrice: (priceInCLP: number) => number;
 }
 
 const initialBookingState: BookingState = {
@@ -61,6 +66,10 @@ const BookingContext = createContext<BookingContextType | undefined>(undefined);
 export function BookingProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<BookingState>(initialBookingState);
   const [authState, setAuthState] = useState<AuthState>(initialAuthState);
+  const [currency, setCurrencyState] = useState<'CLP' | 'USD'>('CLP');
+
+  // Tasa de cambio aproximada: 1 USD = 950 CLP
+  const USD_TO_CLP_RATE = 950;
 
   // Check for existing session on mount and listen to auth changes
   useEffect(() => {
@@ -118,11 +127,11 @@ export function BookingProvider({ children }: { children: ReactNode }) {
   // BOOKING FUNCTIONS
   // ============================================
 
-  const goToStep = (step: BookingStep) => {
+  const goToStep = useCallback((step: BookingStep) => {
     setState(prev => ({ ...prev, step }));
-  };
+  }, []);
 
-  const selectUnit = (unit: Unit) => {
+  const selectUnit = useCallback((unit: Unit) => {
     const pricing = calculatePrice(1);
     setState(prev => ({
       ...prev,
@@ -132,9 +141,9 @@ export function BookingProvider({ children }: { children: ReactNode }) {
       totalPrice: pricing.total,
       step: 'days-selection',
     }));
-  };
+  }, []);
 
-  const setDays = (days: number) => {
+  const setDays = useCallback((days: number) => {
     const pricing = calculatePrice(days);
     setState(prev => ({
       ...prev,
@@ -142,44 +151,63 @@ export function BookingProvider({ children }: { children: ReactNode }) {
       pricePerDay: pricing.pricePerDay,
       totalPrice: pricing.total,
     }));
-  };
+  }, []);
 
-  const processPayment = (): Promise<boolean> => {
+  const processPayment = useCallback((): Promise<boolean> => {
     return new Promise(resolve => {
       setState(prev => ({ ...prev, paymentStatus: 'processing' }));
       setTimeout(() => {
         const success = Math.random() > 0.1;
-        setState(prev => ({
-          ...prev,
-          paymentStatus: success ? 'success' : 'failed',
-        }));
         if (success) {
-          setTimeout(() => goToStep('identity-verification'), 500);
+          // Generar directamente el código de acceso y configurar las fechas
+          setState(prev => {
+            const checkIn = new Date();
+            const checkOut = new Date();
+            checkOut.setDate(checkOut.getDate() + prev.days);
+
+            return {
+              ...prev,
+              paymentStatus: 'success',
+              identityStatus: 'verified',
+              accessCode: generateAccessCode(),
+              checkInDate: checkIn,
+              checkOutDate: checkOut,
+              accessExpiry: checkOut,
+              daysRemaining: prev.days,
+            };
+          });
+        } else {
+          setState(prev => ({
+            ...prev,
+            paymentStatus: 'failed',
+          }));
         }
         resolve(success);
       }, 2000);
     });
-  };
+  }, []);
 
-  const verifyIdentity = (): Promise<boolean> => {
+  const verifyIdentity = useCallback((): Promise<boolean> => {
     return new Promise(resolve => {
       setState(prev => ({ ...prev, identityStatus: 'verifying' }));
       setTimeout(() => {
         const success = Math.random() > 0.15;
         if (success) {
-          const checkIn = new Date();
-          const checkOut = new Date();
-          checkOut.setDate(checkOut.getDate() + state.days);
+          setState(prev => {
+            const checkIn = new Date();
+            const checkOut = new Date();
+            checkOut.setDate(checkOut.getDate() + prev.days);
 
-          setState(prev => ({
-            ...prev,
-            identityStatus: 'verified',
-            accessCode: generateAccessCode(),
-            checkInDate: checkIn,
-            checkOutDate: checkOut,
-            accessExpiry: checkOut,
-            daysRemaining: prev.days,
-          }));
+            return {
+              ...prev,
+              identityStatus: 'verified',
+              accessCode: generateAccessCode(),
+              checkInDate: checkIn,
+              checkOutDate: checkOut,
+              accessExpiry: checkOut,
+              daysRemaining: prev.days,
+            };
+          });
           setTimeout(() => goToStep('access-granted'), 500);
         } else {
           setState(prev => ({ ...prev, identityStatus: 'failed' }));
@@ -187,42 +215,44 @@ export function BookingProvider({ children }: { children: ReactNode }) {
         resolve(success);
       }, 2500);
     });
-  };
+  }, [goToStep]);
 
-  const extendStay = (newTotalDays: number) => {
-    const pricing = calculatePrice(newTotalDays);
-    const checkOut = new Date(state.checkInDate!);
-    checkOut.setDate(checkOut.getDate() + newTotalDays);
+  const extendStay = useCallback((newTotalDays: number) => {
+    setState(prev => {
+      const pricing = calculatePrice(newTotalDays);
+      const checkOut = new Date(prev.checkInDate!);
+      checkOut.setDate(checkOut.getDate() + newTotalDays);
 
-    setState(prev => ({
-      ...prev,
-      days: newTotalDays,
-      pricePerDay: pricing.pricePerDay,
-      totalPrice: pricing.total,
-      checkOutDate: checkOut,
-      accessExpiry: checkOut,
-      daysRemaining: newTotalDays,
-      step: 'access-granted',
-    }));
-  };
+      return {
+        ...prev,
+        days: newTotalDays,
+        pricePerDay: pricing.pricePerDay,
+        totalPrice: pricing.total,
+        checkOutDate: checkOut,
+        accessExpiry: checkOut,
+        daysRemaining: newTotalDays,
+        step: 'access-granted',
+      };
+    });
+  }, []);
 
-  const simulateExpiration = () => {
+  const simulateExpiration = useCallback(() => {
     setState(prev => ({
       ...prev,
       daysRemaining: 0,
       step: 'expiration',
     }));
-  };
+  }, []);
 
-  const reset = () => {
+  const reset = useCallback(() => {
     setState(initialBookingState);
-  };
+  }, []);
 
   // ============================================
   // AUTH FUNCTIONS
   // ============================================
 
-  const login = async (payload: LoginPayload): Promise<boolean> => {
+  const login = useCallback(async (payload: LoginPayload): Promise<boolean> => {
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
@@ -255,9 +285,9 @@ export function BookingProvider({ children }: { children: ReactNode }) {
       }));
       return false;
     }
-  };
+  }, []);
 
-  const register = async (payload: RegisterPayload): Promise<boolean> => {
+  const register = useCallback(async (payload: RegisterPayload): Promise<boolean> => {
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
@@ -290,9 +320,9 @@ export function BookingProvider({ children }: { children: ReactNode }) {
       }));
       return false;
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     setAuthState(prev => ({ ...prev, loading: true }));
     try {
       await logoutUser();
@@ -305,7 +335,22 @@ export function BookingProvider({ children }: { children: ReactNode }) {
         error: null,
       });
     }
-  };
+  }, []);
+
+  // ============================================
+  // CURRENCY FUNCTIONS
+  // ============================================
+
+  const setCurrency = useCallback((newCurrency: 'CLP' | 'USD') => {
+    setCurrencyState(newCurrency);
+  }, []);
+
+  const convertPrice = useCallback((priceInCLP: number): number => {
+    if (currency === 'USD') {
+      return Math.round(priceInCLP / USD_TO_CLP_RATE);
+    }
+    return priceInCLP;
+  }, [currency]);
 
   return (
     <BookingContext.Provider
@@ -325,6 +370,10 @@ export function BookingProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
+        // Currency
+        currency,
+        setCurrency,
+        convertPrice,
       }}
     >
       {children}

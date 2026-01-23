@@ -5,13 +5,19 @@ import { useBooking } from '../context';
 import { PRICING_TIERS, calculatePrice } from '../data';
 
 export default function ExtendStay() {
-  const { state, extendStay, goToStep } = useBooking();
+  const { state, extendStay, goToStep, currency, convertPrice } = useBooking();
   const [newTotalDays, setNewTotalDays] = useState(state.days + 7);
 
   const currentPricing = calculatePrice(state.days);
   const newPricing = calculatePrice(newTotalDays);
   const additionalDays = newTotalDays - state.days;
   const additionalCost = newPricing.total - currentPricing.total;
+
+  // Convert prices
+  const currentTotalConverted = convertPrice(currentPricing.total);
+  const currentPricePerDayConverted = convertPrice(currentPricing.pricePerDay);
+  const newPricePerDayConverted = convertPrice(newPricing.pricePerDay);
+  const additionalCostConverted = convertPrice(additionalCost);
 
   const handleDaysChange = (days: number) => {
     const clamped = Math.max(state.days + 1, Math.min(365, days));
@@ -45,9 +51,9 @@ export default function ExtendStay() {
             <p className="text-slate-400 text-sm mb-2">Estadía actual</p>
             <div className="flex justify-between items-center">
               <span className="text-white">{state.days} días</span>
-              <span className="text-white">${currentPricing.total.toLocaleString()} MXN</span>
+              <span className="text-white">{currency === 'USD' ? '$' : '$'}{currentTotalConverted.toLocaleString(currency === 'USD' ? 'en-US' : 'es-CL')} {currency}</span>
             </div>
-            <p className="text-slate-500 text-xs mt-1">${currentPricing.pricePerDay}/día</p>
+            <p className="text-slate-500 text-xs mt-1">{currency === 'USD' ? '$' : '$'}{currentPricePerDayConverted.toLocaleString(currency === 'USD' ? 'en-US' : 'es-CL')}/{currency}/día</p>
           </div>
 
           <div className="mb-6">
@@ -100,16 +106,16 @@ export default function ExtendStay() {
               <div className="flex justify-between items-center">
                 <span className="text-slate-400">Nuevo precio/día</span>
                 <span className={`font-semibold ${newPricing.pricePerDay < currentPricing.pricePerDay ? 'text-emerald-400' : 'text-white'}`}>
-                  ${newPricing.pricePerDay}/día
+                  {currency === 'USD' ? '$' : '$'}{newPricePerDayConverted.toLocaleString(currency === 'USD' ? 'en-US' : 'es-CL')}/{currency}/día
                   {newPricing.pricePerDay < currentPricing.pricePerDay && (
-                    <span className="text-xs ml-1">(-${currentPricing.pricePerDay - newPricing.pricePerDay})</span>
+                    <span className="text-xs ml-1">(-{currency === 'USD' ? '$' : '$'}{convertPrice(currentPricing.pricePerDay - newPricing.pricePerDay).toLocaleString(currency === 'USD' ? 'en-US' : 'es-CL')})</span>
                   )}
                 </span>
               </div>
               <div className="flex justify-between items-center pt-2 border-t border-slate-700">
                 <span className="text-slate-400">Costo adicional</span>
                 <span className="text-xl font-bold text-emerald-400">
-                  ${additionalCost.toLocaleString()} MXN
+                  {currency === 'USD' ? '$' : '$'}{additionalCostConverted.toLocaleString(currency === 'USD' ? 'en-US' : 'es-CL')} {currency}
                 </span>
               </div>
             </div>
@@ -137,6 +143,7 @@ export default function ExtendStay() {
           <div className="space-y-2">
             {PRICING_TIERS.slice(0, 4).map((tier, index) => {
               const isActive = newTotalDays >= tier.minDays && newTotalDays <= tier.maxDays;
+              const tierPriceConverted = convertPrice(tier.pricePerDay);
               return (
                 <div
                   key={index}
@@ -146,7 +153,7 @@ export default function ExtendStay() {
                 >
                   <span className="text-sm">{tier.minDays}-{tier.maxDays} días</span>
                   <span className={`font-medium ${isActive ? 'text-emerald-400' : 'text-slate-300'}`}>
-                    ${tier.pricePerDay}/día
+                    {currency === 'USD' ? '$' : '$'}{tierPriceConverted.toLocaleString(currency === 'USD' ? 'en-US' : 'es-CL')}/{currency}/día
                   </span>
                 </div>
               );
@@ -158,7 +165,7 @@ export default function ExtendStay() {
           onClick={handleExtend}
           className="w-full py-4 px-8 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-lg rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-emerald-500/25"
         >
-          Pagar extensión ${additionalCost.toLocaleString()} MXN
+          Pagar extensión {currency === 'USD' ? '$' : '$'}{additionalCostConverted.toLocaleString(currency === 'USD' ? 'en-US' : 'es-CL')} {currency}
         </button>
 
       </div>

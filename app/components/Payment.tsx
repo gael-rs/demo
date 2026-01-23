@@ -4,8 +4,12 @@ import { useState } from 'react';
 import { useBooking } from '../context';
 
 export default function Payment() {
-  const { state, processPayment, goToStep } = useBooking();
+  const { state, processPayment, goToStep, currency, convertPrice } = useBooking();
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Convert prices
+  const pricePerDayConverted = convertPrice(state.pricePerDay);
+  const totalPriceConverted = convertPrice(state.totalPrice);
 
   const handlePayment = async () => {
     setIsProcessing(true);
@@ -50,7 +54,7 @@ export default function Payment() {
           <div className="space-y-3 mb-6">
             <div className="flex justify-between">
               <span className="text-slate-400">Precio por día</span>
-              <span className="text-white">${state.pricePerDay} MXN</span>
+              <span className="text-white">{currency === 'USD' ? '$' : '$'}{pricePerDayConverted.toLocaleString(currency === 'USD' ? 'en-US' : 'es-CL')} {currency}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400">Días</span>
@@ -58,7 +62,7 @@ export default function Payment() {
             </div>
             <div className="flex justify-between pt-3 border-t border-slate-700">
               <span className="text-white font-semibold">Total</span>
-              <span className="text-2xl font-bold text-emerald-400">${state.totalPrice.toLocaleString()} MXN</span>
+              <span className="text-2xl font-bold text-emerald-400">{currency === 'USD' ? '$' : '$'}{totalPriceConverted.toLocaleString(currency === 'USD' ? 'en-US' : 'es-CL')} {currency}</span>
             </div>
           </div>
         </div>
@@ -112,7 +116,7 @@ export default function Payment() {
             onClick={handlePayment}
             className="w-full py-4 px-8 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-lg rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-emerald-500/25"
           >
-            Pagar ${state.totalPrice.toLocaleString()} MXN
+            Pagar {currency === 'USD' ? '$' : '$'}{totalPriceConverted.toLocaleString(currency === 'USD' ? 'en-US' : 'es-CL')} {currency}
           </button>
         )}
 

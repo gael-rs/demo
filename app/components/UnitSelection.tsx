@@ -10,7 +10,7 @@ import CityCarousel from './CityCarousel';
 import SpaceDetailsCard from './SpaceDetailsCard';
 
 export default function UnitSelection() {
-  const { selectUnit } = useBooking();
+  const { selectUnit, currency, convertPrice } = useBooking();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCity, setSelectedCity] = useState<City | null>(null);
   const [selectedSpace, setSelectedSpace] = useState<Space | null>(null);
@@ -109,37 +109,39 @@ export default function UnitSelection() {
             <h2 className="text-white text-xl font-semibold mb-6">
               Espacios en {selectedCity.name}
             </h2>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {citySpaces.map(space => (
                 <div
                   key={space.id}
                   onClick={() => handleSpaceSelect(space)}
                   className={`
-                    bg-slate-800 rounded-xl overflow-hidden cursor-pointer
-                    transition-all duration-300 hover:scale-[1.02]
+                    bg-slate-800 rounded-xl cursor-pointer p-1
+                    transition-all duration-300
                     ${selectedSpace?.id === space.id
-                      ? 'ring-4 ring-emerald-500 shadow-xl shadow-emerald-500/50'
-                      : 'hover:ring-2 hover:ring-amber-500'
+                      ? 'ring-4 ring-emerald-500 shadow-xl shadow-emerald-500/50 scale-[1.02]'
+                      : 'hover:ring-2 hover:ring-emerald-400/50 hover:scale-[1.02]'
                     }
                   `}
                 >
-                  <div className="relative aspect-video">
-                    <img
-                      src={space.image}
-                      alt={space.name}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute top-3 left-3 px-2 py-1 bg-emerald-400 text-slate-900 text-xs font-bold rounded-full uppercase">
-                      {space.category}
-                    </div>
-                    <div className="absolute bottom-3 right-3 bg-slate-900/90 backdrop-blur-sm px-3 py-2 rounded-lg">
-                      <div className="text-emerald-400 font-bold text-lg">
-                        ${space.dailyRate.toLocaleString('es-CL')}
+                  <div className="rounded-lg overflow-hidden">
+                    <div className="relative aspect-video">
+                      <img
+                        src={space.image}
+                        alt={space.name}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-3 left-3 px-2 py-1 bg-emerald-400 text-slate-900 text-xs font-bold rounded-full uppercase">
+                        {space.category}
+                      </div>
+                      <div className="absolute bottom-3 right-3 bg-slate-900/90 backdrop-blur-sm px-3 py-2 rounded-lg">
+                        <div className="text-emerald-400 font-bold text-lg">
+                          {currency === 'USD' ? '$' : '$'}{convertPrice(space.dailyRate).toLocaleString(currency === 'USD' ? 'en-US' : 'es-CL')} {currency}
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="p-4">
+                  <div className="p-4 bg-slate-800">
                     <h3 className="text-white font-semibold mb-1">
                       {space.name}
                     </h3>
@@ -152,7 +154,7 @@ export default function UnitSelection() {
                     </div>
 
                     {selectedSpace?.id === space.id && (
-                      <div className="mt-3 flex items-center gap-2 text-emerald-400 text-sm font-semibold">
+                      <div className="mt-3 flex items-center justify-center gap-2 text-emerald-400 text-sm font-semibold bg-emerald-500/10 py-2 rounded-lg border border-emerald-500/30">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                         </svg>

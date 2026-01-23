@@ -7,7 +7,7 @@ import Header from './Header';
 import BookingInputField from './BookingInputField';
 
 export default function DaysSelection() {
-  const { state, setDays, goToStep, processPayment, verifyIdentity } = useBooking();
+  const { state, setDays, goToStep, processPayment, currency, convertPrice } = useBooking();
 
   // Local state for all fields
   const [checkInDate, setCheckInDate] = useState<Date | null>(null);
@@ -42,9 +42,10 @@ export default function DaysSelection() {
 
   // Calculate pricing
   const pricing = calculatePrice(effectiveDays);
-  const valuePerDay = pricing.pricePerDay;
-  const subtotal = pricing.total;
-  const total = subtotal + kitInicio;
+  const valuePerDay = convertPrice(pricing.pricePerDay);
+  const subtotal = convertPrice(pricing.total);
+  const kitInicioConverted = convertPrice(kitInicio);
+  const total = subtotal + kitInicioConverted;
 
   // Kit de Inicio handlers
   const KIT_INCREMENT = 5000;
@@ -69,7 +70,7 @@ export default function DaysSelection() {
   const handlePayment = async () => {
     setPaymentError(null);
 
-    // Process payment
+    // Process payment (now includes verification and access code generation)
     const paymentSuccess = await processPayment();
 
     if (!paymentSuccess) {
@@ -77,15 +78,8 @@ export default function DaysSelection() {
       return;
     }
 
-    // Verify identity (biometric is already verified, but we call this for access code)
-    const identitySuccess = await verifyIdentity();
-
-    if (identitySuccess) {
-      // Navigate to access-granted
-      goToStep('access-granted');
-    } else {
-      setPaymentError('Error en la verificación. Por favor, intenta nuevamente.');
-    }
+    // Navigate directly to access-granted
+    goToStep('access-granted');
   };
 
   // Validation: can proceed to payment?
@@ -213,6 +207,7 @@ export default function DaysSelection() {
             type="currency"
             value={valuePerDay}
             readOnly
+            currency={currency}
           />
 
           {/* SUBTOTAL ESTADÍA */}
@@ -221,6 +216,7 @@ export default function DaysSelection() {
             type="currency"
             value={subtotal}
             readOnly
+            currency={currency}
           />
 
           {/* Kit Inicio */}
@@ -238,11 +234,11 @@ export default function DaysSelection() {
               </button>
               <input
                 type="text"
-                value={new Intl.NumberFormat('es-CL', {
+                value={new Intl.NumberFormat(currency === 'USD' ? 'en-US' : 'es-CL', {
                   style: 'currency',
-                  currency: 'CLP',
+                  currency: currency,
                   minimumFractionDigits: 0,
-                }).format(kitInicio)}
+                }).format(kitInicioConverted)}
                 readOnly
                 className="flex-1 px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white text-center font-medium cursor-not-allowed"
               />
@@ -262,6 +258,7 @@ export default function DaysSelection() {
             value={total}
             readOnly
             highlighted
+            currency={currency}
           />
         </div>
 
@@ -371,14 +368,7 @@ export default function DaysSelection() {
               <span>PROCESANDO...</span>
             </div>
           ) : (
-            <>
-              <span>PAGAR</span>
-              <div className="mt-2 flex items-center justify-center">
-                <div className="px-4 py-1 bg-white rounded">
-                  <span className="text-slate-900 font-bold text-sm">webpay</span>
-                </div>
-              </div>
-            </>
+            <span>PAGAR</span>
           )}
         </button>
 

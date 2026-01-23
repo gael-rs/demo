@@ -8,9 +8,10 @@ interface HeaderProps {
 }
 
 export default function Header({ onCtaClick }: HeaderProps) {
-  const { authState, logout, goToStep } = useBooking();
+  const { authState, logout, goToStep, currency, setCurrency } = useBooking();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isCurrencyMenuOpen, setIsCurrencyMenuOpen] = useState(false);
 
   const menuItems = [
     { label: 'Cómo funciona', href: '#como-funciona' },
@@ -32,6 +33,16 @@ export default function Header({ onCtaClick }: HeaderProps) {
 
   const handleLogoClick = () => {
     goToStep('landing');
+  };
+
+  const handleCurrencyChange = (newCurrency: 'CLP' | 'USD') => {
+    setCurrency(newCurrency);
+    setIsCurrencyMenuOpen(false);
+  };
+
+  const currencyFlags = {
+    CLP: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Flag_of_Chile.svg/32px-Flag_of_Chile.svg.png',
+    USD: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Flag_of_the_United_States.svg/32px-Flag_of_the_United_States.svg.png',
   };
 
   return (
@@ -60,6 +71,70 @@ export default function Header({ onCtaClick }: HeaderProps) {
           </nav>
 
           <div className="flex items-center gap-3">
+            {/* Currency Selector - Desktop */}
+            <div className="relative hidden sm:block">
+              <button
+                onClick={() => setIsCurrencyMenuOpen(!isCurrencyMenuOpen)}
+                className="flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+              >
+                <img
+                  src={currencyFlags[currency]}
+                  alt={currency}
+                  className="w-5 h-4 object-cover rounded-sm"
+                />
+                <span className="text-white text-sm font-medium">{currency}</span>
+                <svg
+                  className={`w-4 h-4 text-slate-400 transition-transform ${isCurrencyMenuOpen ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {isCurrencyMenuOpen && (
+                <div className="absolute right-0 mt-2 w-40 bg-slate-800 border border-slate-700 rounded-xl shadow-xl overflow-hidden">
+                  <button
+                    onClick={() => handleCurrencyChange('CLP')}
+                    className={`w-full px-4 py-3 text-left hover:bg-slate-700 transition-colors flex items-center gap-3 ${
+                      currency === 'CLP' ? 'bg-slate-700' : ''
+                    }`}
+                  >
+                    <img
+                      src={currencyFlags.CLP}
+                      alt="CLP"
+                      className="w-5 h-4 object-cover rounded-sm"
+                    />
+                    <span className="text-white text-sm">CLP</span>
+                    {currency === 'CLP' && (
+                      <svg className="w-4 h-4 text-emerald-400 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleCurrencyChange('USD')}
+                    className={`w-full px-4 py-3 text-left hover:bg-slate-700 transition-colors flex items-center gap-3 ${
+                      currency === 'USD' ? 'bg-slate-700' : ''
+                    }`}
+                  >
+                    <img
+                      src={currencyFlags.USD}
+                      alt="USD"
+                      className="w-5 h-4 object-cover rounded-sm"
+                    />
+                    <span className="text-white text-sm">USD</span>
+                    {currency === 'USD' && (
+                      <svg className="w-4 h-4 text-emerald-400 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* Auth Button - Desktop */}
             {authState.isAuthenticated && authState.user ? (
               <div className="relative hidden sm:block">
@@ -167,6 +242,43 @@ export default function Header({ onCtaClick }: HeaderProps) {
                 </a>
               ))}
 
+              {/* Currency Selector (Mobile) */}
+              <div className="py-3 border-b border-slate-700">
+                <p className="text-slate-400 text-sm mb-2 uppercase">Moneda</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleCurrencyChange('CLP')}
+                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                      currency === 'CLP'
+                        ? 'bg-emerald-500 text-white'
+                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    }`}
+                  >
+                    <img
+                      src={currencyFlags.CLP}
+                      alt="CLP"
+                      className="w-5 h-4 object-cover rounded-sm"
+                    />
+                    <span className="text-sm font-medium">CLP</span>
+                  </button>
+                  <button
+                    onClick={() => handleCurrencyChange('USD')}
+                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                      currency === 'USD'
+                        ? 'bg-emerald-500 text-white'
+                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    }`}
+                  >
+                    <img
+                      src={currencyFlags.USD}
+                      alt="USD"
+                      className="w-5 h-4 object-cover rounded-sm"
+                    />
+                    <span className="text-sm font-medium">USD</span>
+                  </button>
+                </div>
+              </div>
+
               {/* Auth & CTA Buttons (Mobile) */}
               {authState.isAuthenticated ? (
                 <button
@@ -203,6 +315,14 @@ export default function Header({ onCtaClick }: HeaderProps) {
         <div
           className="fixed inset-0 z-40"
           onClick={() => setIsUserMenuOpen(false)}
+        />
+      )}
+
+      {/* Overlay to close currency menu */}
+      {isCurrencyMenuOpen && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setIsCurrencyMenuOpen(false)}
         />
       )}
     </>

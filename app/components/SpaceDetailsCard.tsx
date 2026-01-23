@@ -3,6 +3,7 @@
 import { Space } from '../types';
 import AmenitiesGrid from './AmenitiesGrid';
 import WhatsAppButton from './WhatsAppButton';
+import { useBooking } from '../context';
 
 interface SpaceDetailsCardProps {
   space: Space;
@@ -10,6 +11,8 @@ interface SpaceDetailsCardProps {
 }
 
 export default function SpaceDetailsCard({ space, onReserve }: SpaceDetailsCardProps) {
+  const { currency, convertPrice } = useBooking();
+  const displayPrice = convertPrice(space.dailyRate);
   return (
     <div className="bg-slate-800 rounded-2xl overflow-hidden shadow-2xl">
       {/* Header bar */}
@@ -35,7 +38,7 @@ export default function SpaceDetailsCard({ space, onReserve }: SpaceDetailsCardP
         />
         <div className="absolute bottom-4 right-4 bg-slate-900/90 backdrop-blur-sm px-4 py-3 rounded-lg">
           <div className="text-emerald-400 font-bold text-2xl">
-            ${space.dailyRate.toLocaleString('es-CL')}
+            {currency === 'USD' ? '$' : '$'}{displayPrice.toLocaleString(currency === 'USD' ? 'en-US' : 'es-CL')} {currency}
           </div>
           <div className="text-slate-400 text-xs">
             {space.validityNote}

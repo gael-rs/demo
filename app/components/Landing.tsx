@@ -3,11 +3,11 @@
 import { useBooking } from '../context';
 import Header from './Header';
 import Footer from './Footer';
-import CategoryCarousel from './CategoryCarousel';
+import PropertyShowcase from './PropertyShowcase';
 import { PRICING_TIERS } from '../data';
 
 export default function Landing() {
-  const { goToStep } = useBooking();
+  const { goToStep, currency, convertPrice } = useBooking();
 
   const handleCtaClick = () => goToStep('unit-selection');
 
@@ -20,7 +20,7 @@ export default function Landing() {
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full mb-6">
             <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-            <span className="text-emerald-400 text-sm font-medium">Disponible en Ciudad de México</span>
+            <span className="text-emerald-400 text-sm font-medium">Disponible en todo Chile</span>
           </div>
 
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
@@ -69,9 +69,9 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Accommodation Categories Carousel */}
+      {/* Property Showcase */}
       <section className="py-20 px-6 bg-slate-900">
-        <CategoryCarousel />
+        <PropertyShowcase />
       </section>
 
       {/* How it Works Section */}
@@ -191,34 +191,37 @@ export default function Landing() {
 
           <div className="bg-slate-800 rounded-2xl p-8 border border-slate-700">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {PRICING_TIERS.map((tier, index) => (
-                <div
-                  key={index}
-                  className={`p-4 rounded-xl text-center ${
-                    index === PRICING_TIERS.length - 1
-                      ? 'bg-emerald-500/20 border-2 border-emerald-500'
-                      : 'bg-slate-700/50'
-                  }`}
-                >
-                  <p className="text-slate-400 text-sm mb-1">
-                    {tier.minDays}-{tier.maxDays} días
-                  </p>
-                  <p className={`text-2xl font-bold ${index === PRICING_TIERS.length - 1 ? 'text-emerald-400' : 'text-white'}`}>
-                    ${tier.pricePerDay}
-                  </p>
-                  <p className="text-slate-500 text-xs">MXN/día</p>
-                  {index === PRICING_TIERS.length - 1 && (
-                    <span className="inline-block mt-2 px-2 py-1 bg-emerald-500 text-white text-xs rounded-full">
-                      Mejor precio
-                    </span>
-                  )}
-                </div>
-              ))}
+              {PRICING_TIERS.map((tier, index) => {
+                const displayPrice = convertPrice(tier.pricePerDay);
+                return (
+                  <div
+                    key={index}
+                    className={`p-4 rounded-xl text-center ${
+                      index === PRICING_TIERS.length - 1
+                        ? 'bg-emerald-500/20 border-2 border-emerald-500'
+                        : 'bg-slate-700/50'
+                    }`}
+                  >
+                    <p className="text-slate-400 text-sm mb-1">
+                      {tier.minDays}-{tier.maxDays} días
+                    </p>
+                    <p className={`text-2xl font-bold ${index === PRICING_TIERS.length - 1 ? 'text-emerald-400' : 'text-white'}`}>
+                      {currency === 'USD' ? '$' : '$'}{displayPrice.toLocaleString(currency === 'USD' ? 'en-US' : 'es-CL')}
+                    </p>
+                    <p className="text-slate-500 text-xs">{currency}/día</p>
+                    {index === PRICING_TIERS.length - 1 && (
+                      <span className="inline-block mt-2 px-2 py-1 bg-emerald-500 text-white text-xs rounded-full">
+                        Mejor precio
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             <div className="mt-8 pt-6 border-t border-slate-700 text-center">
               <p className="text-slate-400 mb-4">
-                Ejemplo: 30 días a <span className="text-white font-semibold">$650/día</span> = <span className="text-emerald-400 font-bold">$19,500 MXN</span> total
+                Ejemplo: 30 días a <span className="text-white font-semibold">{currency === 'USD' ? '$' : '$'}{convertPrice(28000).toLocaleString(currency === 'USD' ? 'en-US' : 'es-CL')}/{currency}/día</span> = <span className="text-emerald-400 font-bold">{currency === 'USD' ? '$' : '$'}{convertPrice(28000 * 30).toLocaleString(currency === 'USD' ? 'en-US' : 'es-CL')} {currency}</span> total
               </p>
               <p className="text-slate-500 text-sm">
                 vs. renta tradicional: depósito + renta + aval + comisión = mucho más caro y complicado

@@ -35,9 +35,11 @@ export interface BookingState {
   checkOutDate: Date | null;
   paymentStatus: 'pending' | 'processing' | 'success' | 'failed';
   identityStatus: 'pending' | 'verifying' | 'verified' | 'failed';
+  biometricStatus: 'idle' | 'verifying' | 'verified' | 'failed';
   accessCode: string | null;
   accessExpiry: Date | null;
   daysRemaining: number;
+  kitInicio: number;
 }
 
 // ============================================
@@ -75,4 +77,53 @@ export interface AuthResponse {
   user?: User;
   token?: string;
   error?: string;
+}
+
+// ============================================
+// CATEGORÍAS DE ALOJAMIENTO
+// ============================================
+
+export interface AccommodationCategory {
+  id: string;
+  name: string;
+  tagline: string;
+  targetAudience: string;
+  idealDays: string;
+  priceRange: string;
+  image: string;
+  features: string[];
+  icon: string;
+}
+
+// ============================================
+// SPACE SELECTION DATA TYPES
+// ============================================
+
+export interface City {
+  id: string;
+  name: string;
+  image: string;
+  availableUnits: number;
+}
+
+export interface Amenity {
+  id: string;
+  label: string;
+  icon: string; // emoji like '📶', '📺', etc.
+}
+
+export interface Space {
+  id: string;
+  name: string;
+  category: string; // "ROOMIE", "STARTER", etc.
+  city: string;
+  cityId: string;
+  location: string;
+  image: string;
+  dailyRate: number;
+  validityNote: string;
+  amenities: string[]; // Array of amenity IDs
+  description: string;
+  whatsappNumber: string;
+  ownerName?: string;
 }

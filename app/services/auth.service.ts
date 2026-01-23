@@ -3,181 +3,222 @@
  * SERVICIO DE AUTENTICACIÓN - HOMESTED
  * ============================================
  *
- * Este archivo contiene funciones mock para autenticación.
- *
- * INSTRUCCIONES PARA DESARROLLADOR DE BACKEND:
- * --------------------------------------------
- * Reemplaza el contenido de cada función con llamadas
- * reales a tu API. La estructura de datos ya está definida
- * en app/types.ts (LoginPayload, RegisterPayload, AuthResponse).
- *
- * Ejemplo con fetch:
- *
- * export async function loginUser(payload: LoginPayload): Promise<AuthResponse> {
- *   const response = await fetch('/api/auth/login', {
- *     method: 'POST',
- *     headers: { 'Content-Type': 'application/json' },
- *     body: JSON.stringify(payload)
- *   });
- *   return response.json();
- * }
+ * Integración con Supabase Auth para login, registro y gestión de sesiones.
  *
  * ============================================
  */
 
 import { LoginPayload, RegisterPayload, AuthResponse, User } from '../types';
+import { supabase } from '../lib/supabase';
+import { User as SupabaseUser } from '@supabase/supabase-js';
+import { getUserProfile, syncUserProfile } from './user.service';
 
-// Simula delay de red
-const simulateNetworkDelay = () => new Promise(resolve => setTimeout(resolve, 1500));
+/**
+ * HELPER: Mapear usuario de Supabase a tipo User de la app
+ * Prioriza datos de public.users sobre user_metadata
+ */
+async function mapSupabaseUserToAppUser(supabaseUser: SupabaseUser): Promise<User> {
+  // Intentar obtener datos desde public.users
+  const profile = await getUserProfile(supabaseUser.id);
 
-// Usuario mock para pruebas
-const MOCK_USER: User = {
-  id: 'user-001',
-  email: 'usuario@homested.com',
-  name: 'Usuario Homested',
-  phone: '+52 55 1234 5678',
-};
+  if (profile) {
+    return profile;
+  }
 
-// Token mock
-const MOCK_TOKEN = 'mock-jwt-token-xyz123';
+  // Fallback: usar user_metadata si no existe en public.users
+  // (puede pasar durante el registro si el trigger falla)
+  await syncUserProfile();
+
+  return {
+    id: supabaseUser.id,
+    email: supabaseUser.email || '',
+    name: supabaseUser.user_metadata?.name || '',
+    phone: supabaseUser.user_metadata?.phone,
+  };
+}
+
+/**
+ * HELPER: Traducir errores de Supabase al español
+ */
+function translateSupabaseError(message: string): string {
+  const errorMap: Record<string, string> = {
+    'Invalid login credentials': 'Credenciales inválidas',
+    'User already registered': 'Este email ya está registrado',
+    'Email not confirmed': 'El email no ha sido confirmado',
+    'Password should be at least 6 characters': 'La contraseña debe tener al menos 6 caracteres',
+    'Invalid email': 'El email no es válido',
+    'Email rate limit exceeded': 'Demasiados intentos. Intenta más tarde.',
+    'Signup requires a valid password': 'La contraseña no es válida',
+  };
+
+  // Buscar coincidencia parcial en el mensaje
+  for (const [key, value] of Object.entries(errorMap)) {
+    if (message.includes(key)) {
+      return value;
+    }
+  }
+
+  // Si no hay traducción específica, retornar mensaje original o genérico
+  return message || 'Error desconocido';
+}
 
 /**
  * LOGIN
  * -----
- * Autentica un usuario existente.
+ * Autentica un usuario existente con Supabase.
  *
  * @param payload - Email y contraseña del usuario
  * @returns AuthResponse con usuario y token si es exitoso
- *
- * TODO Backend: Reemplazar con llamada real a POST /api/auth/login
  */
 export async function loginUser(payload: LoginPayload): Promise<AuthResponse> {
-  await simulateNetworkDelay();
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: payload.email,
+      password: payload.password,
+    });
 
-  // MOCK: Acepta cualquier email con password "123456"
-  // TODO: Reemplazar con validación real del backend
-  if (payload.password === '123456') {
+    if (error) {
+      return {
+        success: false,
+        error: translateSupabaseError(error.message),
+      };
+    }
+
+    if (!data.user || !data.session) {
+      return {
+        success: false,
+        error: 'Error al iniciar sesión',
+      };
+    }
+
+    const user = await mapSupabaseUserToAppUser(data.user);
+
     return {
       success: true,
-      user: {
-        ...MOCK_USER,
-        email: payload.email,
-      },
-      token: MOCK_TOKEN,
+      user,
+      token: data.session.access_token,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: 'Error de conexión. Intenta de nuevo.',
     };
   }
-
-  return {
-    success: false,
-    error: 'Credenciales inválidas',
-  };
 }
 
 /**
  * REGISTER
  * --------
- * Crea una nueva cuenta de usuario.
+ * Crea una nueva cuenta de usuario con Supabase.
  *
  * @param payload - Datos del nuevo usuario (nombre, email, password, phone?)
  * @returns AuthResponse con usuario y token si es exitoso
- *
- * TODO Backend: Reemplazar con llamada real a POST /api/auth/register
  */
 export async function registerUser(payload: RegisterPayload): Promise<AuthResponse> {
-  await simulateNetworkDelay();
-
-  // MOCK: Simula registro exitoso siempre
-  // TODO: Reemplazar con creación real en el backend
-
-  // Validación básica del email (simulada)
-  if (!payload.email.includes('@')) {
-    return {
-      success: false,
-      error: 'El email no es válido',
-    };
-  }
-
-  // Validación de contraseña mínima
-  if (payload.password.length < 6) {
-    return {
-      success: false,
-      error: 'La contraseña debe tener al menos 6 caracteres',
-    };
-  }
-
-  return {
-    success: true,
-    user: {
-      id: `user-${Date.now()}`,
+  try {
+    const { data, error } = await supabase.auth.signUp({
       email: payload.email,
-      name: payload.name,
-      phone: payload.phone,
-    },
-    token: MOCK_TOKEN,
-  };
+      password: payload.password,
+      options: {
+        data: {
+          name: payload.name,
+          phone: payload.phone,
+        },
+      },
+    });
+
+    if (error) {
+      return {
+        success: false,
+        error: translateSupabaseError(error.message),
+      };
+    }
+
+    if (!data.user || !data.session) {
+      return {
+        success: false,
+        error: 'Error al crear cuenta',
+      };
+    }
+
+    const user = await mapSupabaseUserToAppUser(data.user);
+
+    return {
+      success: true,
+      user,
+      token: data.session.access_token,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: 'Error de conexión. Intenta de nuevo.',
+    };
+  }
 }
 
 /**
  * LOGOUT
  * ------
- * Cierra la sesión del usuario actual.
- *
- * TODO Backend: Reemplazar con llamada real a POST /api/auth/logout
- * (para invalidar tokens en el servidor si es necesario)
+ * Cierra la sesión del usuario actual con Supabase.
  */
 export async function logoutUser(): Promise<void> {
-  await simulateNetworkDelay();
-
-  // MOCK: Solo simula el logout
-  // TODO: Invalidar token en el backend, limpiar cookies, etc.
-
-  // Limpiar localStorage si se usa para persistencia
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('auth_user');
+  try {
+    await supabase.auth.signOut();
+  } catch {
+    // Ignorar errores de logout, siempre limpiar sesión local
+  } finally {
+    clearSession();
   }
 }
 
 /**
  * CHECK SESSION
  * -------------
- * Verifica si hay una sesión activa (token válido).
+ * Verifica si hay una sesión activa en Supabase.
  * Útil para restaurar sesión al cargar la app.
  *
  * @returns AuthResponse con usuario si la sesión es válida
- *
- * TODO Backend: Reemplazar con llamada real a GET /api/auth/me
  */
 export async function checkSession(): Promise<AuthResponse> {
-  await simulateNetworkDelay();
+  try {
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-  // MOCK: Verificar si hay datos guardados en localStorage
-  // TODO: Validar token real con el backend
-
-  if (typeof window !== 'undefined') {
-    const storedToken = localStorage.getItem('auth_token');
-    const storedUser = localStorage.getItem('auth_user');
-
-    if (storedToken && storedUser) {
-      try {
-        const user = JSON.parse(storedUser) as User;
-        return {
-          success: true,
-          user,
-          token: storedToken,
-        };
-      } catch {
-        // JSON inválido, limpiar
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('auth_user');
-      }
+    if (sessionError || !session) {
+      clearSession();
+      return {
+        success: false,
+        error: 'No hay sesión activa',
+      };
     }
-  }
 
-  return {
-    success: false,
-    error: 'No hay sesión activa',
-  };
+    // Obtener datos frescos del usuario
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      clearSession();
+      return {
+        success: false,
+        error: 'No hay sesión activa',
+      };
+    }
+
+    const appUser = await mapSupabaseUserToAppUser(user);
+
+    // Persistir sesión en localStorage
+    persistSession(appUser, session.access_token);
+
+    return {
+      success: true,
+      user: appUser,
+      token: session.access_token,
+    };
+  } catch (error) {
+    clearSession();
+    return {
+      success: false,
+      error: 'Error al verificar sesión',
+    };
+  }
 }
 
 /**

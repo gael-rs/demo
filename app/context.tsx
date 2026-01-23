@@ -11,6 +11,7 @@ import {
   persistSession,
   clearSession,
 } from './services/auth.service';
+import { supabase } from './lib/supabase';
 
 interface BookingContextType {
   // Booking state
@@ -41,9 +42,11 @@ const initialBookingState: BookingState = {
   checkOutDate: null,
   paymentStatus: 'pending',
   identityStatus: 'pending',
+  biometricStatus: 'idle',
   accessCode: null,
   accessExpiry: null,
   daysRemaining: 0,
+  kitInicio: 25000,
 };
 
 const initialAuthState: AuthState = {
@@ -59,7 +62,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<BookingState>(initialBookingState);
   const [authState, setAuthState] = useState<AuthState>(initialAuthState);
 
-  // Check for existing session on mount
+  // Check for existing session on mount and listen to auth changes
   useEffect(() => {
     const initAuth = async () => {
       try {
@@ -79,6 +82,36 @@ export function BookingProvider({ children }: { children: ReactNode }) {
       }
     };
     initAuth();
+
+    // Listen to auth state changes (login, logout, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT') {
+        // Usuario cerró sesión
+        clearSession();
+        setAuthState({
+          isAuthenticated: false,
+          user: null,
+          loading: false,
+          error: null,
+        });
+      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        // Usuario inició sesión o token fue refrescado
+        const response = await checkSession();
+        if (response.success && response.user) {
+          setAuthState({
+            isAuthenticated: true,
+            user: response.user,
+            loading: false,
+            error: null,
+          });
+        }
+      }
+    });
+
+    // Cleanup subscription on unmount
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // ============================================

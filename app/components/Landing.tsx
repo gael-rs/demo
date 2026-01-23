@@ -3,6 +3,7 @@
 import { useBooking } from '../context';
 import Header from './Header';
 import Footer from './Footer';
+import CategoryCarousel from './CategoryCarousel';
 import { PRICING_TIERS } from '../data';
 
 export default function Landing() {
@@ -66,6 +67,11 @@ export default function Landing() {
             <p className="text-slate-400 text-sm mt-1">Ahorro en estadías largas</p>
           </div>
         </div>
+      </section>
+
+      {/* Accommodation Categories Carousel */}
+      <section className="py-20 px-6 bg-slate-900">
+        <CategoryCarousel />
       </section>
 
       {/* How it Works Section */}

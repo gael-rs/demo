@@ -29,7 +29,7 @@ export default function DaysSelection() {
   const [discountRules, setDiscountRules] = useState<DiscountRule[]>([]);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [modalConfig, setModalConfig] = useState({ title: '', message: '', type: 'info' as const });
+  const [modalConfig, setModalConfig] = useState<{ title: string; message: string; type: 'info' | 'error' | 'warning' }>({ title: '', message: '', type: 'info' });
 
   const selectedSpace = SPACES.find(s => s.id === state.selectedUnit?.id) || SPACES[0];
   const basePrice = state.selectedUnit?.basePrice || 35000;

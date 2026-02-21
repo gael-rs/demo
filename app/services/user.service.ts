@@ -35,6 +35,7 @@ export async function getUserProfile(userId: string): Promise<User | null> {
       email: data.email,
       name: data.name,
       phone: data.phone,
+      role: data.role || 'user',
     };
   } catch {
     return null;
@@ -65,6 +66,35 @@ export async function updateUserProfile(
   } catch {
     return false;
   }
+}
+
+/**
+ * Obtener todos los usuarios (admin)
+ */
+export async function getAllUsers(): Promise<(User & { created_at?: string; bookings_count?: number })[]> {
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching users:', error);
+    throw error;
+  }
+
+  return data || [];
+}
+
+/**
+ * Actualizar rol de usuario (admin)
+ */
+export async function updateUserRole(userId: string, role: 'user' | 'admin'): Promise<boolean> {
+  const { error } = await supabase
+    .from('users')
+    .update({ role, updated_at: new Date().toISOString() })
+    .eq('id', userId);
+
+  return !error;
 }
 
 /**

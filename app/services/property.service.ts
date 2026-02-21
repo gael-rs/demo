@@ -1,3 +1,5 @@
+import { supabase } from '@/app/lib/supabase';
+
 export interface Property {
   id: string;
   name: string;

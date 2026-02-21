@@ -1,28 +1,155 @@
 'use client';
 
-import Image from 'next/image';
-import { SPACES } from '../data';
+import { useState, useEffect, useCallback } from 'react';
+import { getActiveProperties, Property } from '../services/property.service';
 import { useBooking } from '../context';
 
 export default function PropertyShowcase() {
-  const property = SPACES[0]; // Centro de Chile property
-  const { currency, convertPrice } = useBooking();
-  const displayPrice = convertPrice(property.dailyRate);
+  const { currency, convertPrice, goToStep } = useBooking();
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadProperties = async () => {
+      try {
+        const data = await getActiveProperties();
+
+        if (!isMounted) return;
+
+        // Seleccionar hasta 5 propiedades aleatorias
+        const shuffled = [...data].sort(() => Math.random() - 0.5);
+        const selected = shuffled.slice(0, Math.min(5, data.length));
+
+        setProperties(selected);
+      } catch (error: any) {
+        if (!isMounted) return;
+
+        // Ignorar errores de abort
+        if (error?.name === 'AbortError') {
+          console.log('Request was aborted, ignoring...');
+          return;
+        }
+
+        console.error('Error loading properties:', error);
+        setProperties([]); // Mostrar vacío en caso de error
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadProperties();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Auto-advance carousel every 5 seconds
+  useEffect(() => {
+    if (properties.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % properties.length);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [properties.length]);
+
+  const handlePrevious = useCallback(() => {
+    setCurrentIndex((prev) => (prev - 1 + properties.length) % properties.length);
+  }, [properties.length]);
+
+  const handleNext = useCallback(() => {
+    setCurrentIndex((prev) => (prev + 1) % properties.length);
+  }, [properties.length]);
+
+  const handleViewAvailability = () => {
+    goToStep('unit-selection');
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <svg className="w-12 h-12 animate-spin text-emerald-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            <p className="text-slate-400">Cargando propiedades...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (properties.length === 0) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center py-16">
+          <svg className="w-24 h-24 text-slate-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+          <h3 className="text-white text-xl font-semibold mb-2">
+            No hay propiedades disponibles
+          </h3>
+          <p className="text-slate-400">
+            Estamos preparando increíbles opciones para ti. Vuelve pronto.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const currentProperty = properties[currentIndex];
+  const displayPrice = convertPrice(currentProperty.base_price_clp);
 
   return (
     <div className="max-w-7xl mx-auto">
       {/* Section Header */}
       <div className="text-center mb-12">
         <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-          Nuestro Inmueble Disponible
+          {properties.length === 1 ? 'Nuestro Inmueble Disponible' : 'Nuestros Inmuebles Destacados'}
         </h2>
         <p className="text-slate-400 text-lg">
-          Departamento moderno en el corazón de Santiago
+          {properties.length === 1
+            ? 'Departamento moderno listo para ti'
+            : `${properties.length} propiedades disponibles en diferentes ciudades`}
         </p>
       </div>
 
-      {/* Property Card - Modern & Eye-catching */}
-      <div className="max-w-2xl mx-auto">
+      {/* Carousel Container */}
+      <div className="max-w-2xl mx-auto relative">
+        {/* Navigation Arrows - Desktop (a los lados) */}
+        {properties.length > 1 && (
+          <>
+            <button
+              onClick={handlePrevious}
+              className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 lg:-translate-x-16 z-10 w-12 h-12 bg-slate-800 hover:bg-emerald-500 border border-slate-700 hover:border-emerald-400 rounded-full items-center justify-center transition-all group shadow-xl"
+              aria-label="Propiedad anterior"
+            >
+              <svg className="w-6 h-6 text-slate-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <button
+              onClick={handleNext}
+              className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 lg:translate-x-16 z-10 w-12 h-12 bg-slate-800 hover:bg-emerald-500 border border-slate-700 hover:border-emerald-400 rounded-full items-center justify-center transition-all group shadow-xl"
+              aria-label="Siguiente propiedad"
+            >
+              <svg className="w-6 h-6 text-slate-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </>
+        )}
+
+        {/* Property Card */}
         <div className="group relative bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 rounded-3xl overflow-hidden hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-500">
           {/* Animated border effect */}
           <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-emerald-500 via-cyan-500 to-emerald-500 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500" />
@@ -32,22 +159,16 @@ export default function PropertyShowcase() {
             {/* Image Section */}
             <div className="relative aspect-[16/10] overflow-hidden">
               <img
-                src="/img/prinipal.jpeg"
-                alt={property.name}
+                src={currentProperty.images && currentProperty.images.length > 0
+                  ? currentProperty.images[0]
+                  : '/img/living.png'}
+                alt={currentProperty.name}
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
               />
 
-              {/* PRO Badge */}
+              {/* City Badge */}
               <div className="absolute top-4 left-4 px-4 py-2 bg-emerald-400 text-slate-900 text-sm font-bold rounded-full uppercase shadow-lg">
-                {property.category}
-              </div>
-
-              {/* Price Badge */}
-              <div className="absolute top-4 right-4 bg-slate-900/95 backdrop-blur-md px-4 py-3 rounded-xl border border-emerald-500/30 shadow-xl">
-                <div className="text-emerald-400 font-bold text-2xl">
-                  {currency === 'USD' ? '$' : '$'}{displayPrice.toLocaleString(currency === 'USD' ? 'en-US' : 'es-CL')}
-                </div>
-                <div className="text-slate-400 text-xs text-center">{currency}/día</div>
+                {currentProperty.city}
               </div>
 
               {/* Gradient Overlay */}
@@ -55,46 +176,64 @@ export default function PropertyShowcase() {
 
               {/* Property Title Overlay */}
               <div className="absolute bottom-0 left-0 right-0 p-6">
-                <h3 className="text-3xl font-bold text-white mb-2 drop-shadow-lg">
-                  {property.name}
+                <h3 className="text-xl md:text-2xl font-bold text-white mb-2 drop-shadow-lg line-clamp-2">
+                  {currentProperty.name}
                 </h3>
                 <div className="flex items-center gap-2 text-emerald-400">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  <span className="text-white font-medium">{property.location}, {property.city}</span>
+                  <span className="text-white text-sm md:text-base font-medium line-clamp-1">{currentProperty.address}</span>
                 </div>
               </div>
+
             </div>
 
             {/* Card Content */}
             <div className="p-6">
+              {/* Price - Moved here */}
+              <div className="mb-4 pb-4 border-b border-slate-700/50">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-emerald-400 font-bold text-3xl">
+                    {currency === 'USD' ? '$' : '$'}{displayPrice.toLocaleString(currency === 'USD' ? 'en-US' : 'es-CL')}
+                  </span>
+                  <span className="text-slate-400 text-sm">{currency}/día</span>
+                </div>
+              </div>
+
               {/* Description */}
-              <p className="text-slate-400 text-sm leading-relaxed mb-6">
-                {property.description.substring(0, 150)}...
-              </p>
+              {currentProperty.description && (
+                <p className="text-slate-400 text-sm leading-relaxed mb-6">
+                  {currentProperty.description.length > 150
+                    ? `${currentProperty.description.substring(0, 150)}...`
+                    : currentProperty.description}
+                </p>
+              )}
 
               {/* Stats */}
               <div className="flex items-center justify-between pb-6 border-b border-slate-700/50 mb-6">
                 <div className="text-center">
-                  <div className="text-emerald-400 font-bold text-xl">30 días</div>
-                  <div className="text-slate-500 text-xs">Estadía mínima</div>
+                  <div className="text-emerald-400 font-bold text-xl">{currentProperty.capacity}</div>
+                  <div className="text-slate-500 text-xs">Personas</div>
                 </div>
                 <div className="w-px h-10 bg-slate-700" />
                 <div className="text-center">
-                  <div className="text-emerald-400 font-bold text-xl">55%</div>
-                  <div className="text-slate-500 text-xs">Ahorro vs hotel</div>
+                  <div className="text-emerald-400 font-bold text-xl">{currentProperty.bedrooms}</div>
+                  <div className="text-slate-500 text-xs">Dormitorios</div>
                 </div>
                 <div className="w-px h-10 bg-slate-700" />
                 <div className="text-center">
-                  <div className="text-emerald-400 font-bold text-xl">24/7</div>
-                  <div className="text-slate-500 text-xs">Acceso digital</div>
+                  <div className="text-emerald-400 font-bold text-xl">{currentProperty.bathrooms}</div>
+                  <div className="text-slate-500 text-xs">Baños</div>
                 </div>
               </div>
 
               {/* CTA Button */}
-              <button className="w-full py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-white font-bold text-lg rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg hover:shadow-emerald-500/50 active:scale-[0.98] flex items-center justify-center gap-2">
+              <button
+                onClick={handleViewAvailability}
+                className="w-full py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-white font-bold text-lg rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg hover:shadow-emerald-500/50 active:scale-[0.98] flex items-center justify-center gap-2"
+              >
                 Ver disponibilidad
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -103,6 +242,24 @@ export default function PropertyShowcase() {
             </div>
           </div>
         </div>
+
+        {/* Carousel Indicators - Only show if more than 1 property */}
+        {properties.length > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-6">
+            {properties.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentIndex(index)}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  index === currentIndex
+                    ? 'w-8 bg-emerald-500'
+                    : 'w-2 bg-slate-600 hover:bg-slate-500'
+                }`}
+                aria-label={`Ir a propiedad ${index + 1}`}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

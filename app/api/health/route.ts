@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/app/lib/supabase';
+import { createServerSupabaseClient } from '@/app/lib/supabase-server';
 
 export async function GET() {
   try {
+    // Crear cliente de Supabase para server-side
+    const supabase = await createServerSupabaseClient();
+
     // Intenta obtener la sesión actual como prueba de conexión
     const { data, error } = await supabase.auth.getSession();
 

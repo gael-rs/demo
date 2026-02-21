@@ -40,6 +40,31 @@ export interface BookingState {
   accessExpiry: Date | null;
   daysRemaining: number;
   kitInicio: number;
+  bookingId: string | null; // ID de la reserva en Supabase
+  basePricePerDay?: number;
+  discountPercentage?: number;
+  discountAmount?: number;
+  termsAccepted: boolean; // Aceptación de términos y condiciones
+}
+
+export interface Booking {
+  id: string;
+  user_id: string;
+  property_id: string;
+  check_in: string;
+  check_out: string;
+  days: number;
+  price_per_day_clp: number;
+  total_price_clp: number;
+  payment_status: 'pending' | 'completed' | 'failed' | 'refunded';
+  status: 'pending' | 'confirmed' | 'active' | 'completed' | 'cancelled';
+  base_price_clp?: number;
+  discount_percentage?: number;
+  discount_amount_clp?: number;
+  created_at: string;
+  updated_at: string;
+  // Relaciones opcionales
+  property?: Space;
 }
 
 // ============================================
@@ -51,6 +76,7 @@ export interface User {
   email: string;
   name: string;
   phone?: string;
+  role?: 'user' | 'admin';
 }
 
 export interface AuthState {

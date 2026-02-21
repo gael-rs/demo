@@ -3,6 +3,7 @@
 import { Space } from '../types';
 import AmenitiesGrid from './AmenitiesGrid';
 import WhatsAppButton from './WhatsAppButton';
+import PropertyImageCarousel from './PropertyImageCarousel';
 import { useBooking } from '../context';
 
 interface SpaceDetailsCardProps {
@@ -30,13 +31,12 @@ export default function SpaceDetailsCard({ space, onReserve }: SpaceDetailsCardP
       </div>
 
       {/* Image section with price overlay */}
-      <div className="relative aspect-video">
-        <img
-          src={space.image}
-          alt={space.name}
-          className="w-full h-full object-cover"
+      <div className="relative">
+        <PropertyImageCarousel
+          images={(space as any).images || [space.image]}
+          propertyName={space.name}
         />
-        <div className="absolute bottom-4 right-4 bg-slate-900/90 backdrop-blur-sm px-4 py-3 rounded-lg">
+        <div className="absolute bottom-4 right-4 bg-slate-900/90 backdrop-blur-sm px-4 py-3 rounded-lg z-10">
           <div className="text-emerald-400 font-bold text-2xl">
             {currency === 'USD' ? '$' : '$'}{displayPrice.toLocaleString(currency === 'USD' ? 'en-US' : 'es-CL')} {currency}
           </div>
@@ -71,7 +71,7 @@ export default function SpaceDetailsCard({ space, onReserve }: SpaceDetailsCardP
           onClick={() => onReserve(space)}
           className="w-full py-4 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold text-lg uppercase tracking-widest rounded-lg transition-all active:scale-[0.98] shadow-lg hover:shadow-xl"
         >
-          R E S E R V A
+          RESERVAR
         </button>
       </div>
     </div>

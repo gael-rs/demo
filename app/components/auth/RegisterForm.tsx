@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useBooking } from '../../context';
 
 interface RegisterFormProps {
@@ -266,13 +267,21 @@ export default function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
           />
           <span className="text-sm text-slate-400">
             Acepto los{' '}
-            <button type="button" className="text-emerald-400 hover:text-emerald-300">
+            <Link
+              href="/terminos-y-condiciones"
+              target="_blank"
+              className="text-emerald-400 hover:text-emerald-300 underline"
+            >
               términos y condiciones
-            </button>{' '}
+            </Link>{' '}
             y la{' '}
-            <button type="button" className="text-emerald-400 hover:text-emerald-300">
+            <Link
+              href="/politica-de-privacidad"
+              target="_blank"
+              className="text-emerald-400 hover:text-emerald-300 underline"
+            >
               política de privacidad
-            </button>
+            </Link>
           </span>
         </label>
         {errors.terms && (

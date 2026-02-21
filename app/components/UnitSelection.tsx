@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useBooking } from '../context';
-import { CITIES, SPACES, AMENITIES } from '../data';
+import { AMENITIES } from '../data';
 import { City, Space, Unit } from '../types';
+import { getActiveProperties, Property } from '../services/property.service';
 import Header from './Header';
 import SearchBar from './SearchBar';
 import CityCarousel from './CityCarousel';
@@ -14,20 +15,78 @@ export default function UnitSelection() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCity, setSelectedCity] = useState<City | null>(null);
   const [selectedSpace, setSelectedSpace] = useState<Space | null>(null);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Load properties from database
+  useEffect(() => {
+    const loadProperties = async () => {
+      try {
+        const data = await getActiveProperties();
+        setProperties(data);
+      } catch (error) {
+        console.error('Error loading properties:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadProperties();
+  }, []);
+
+  // Generate cities from available properties
+  const availableCities = useMemo(() => {
+    const cityMap = new Map<string, City>();
+
+    properties.forEach(property => {
+      if (!cityMap.has(property.city)) {
+        cityMap.set(property.city, {
+          id: property.city.toLowerCase().replace(/\s+/g, '-'),
+          name: property.city,
+          image: property.images && property.images.length > 0
+            ? property.images[0]
+            : '/img/prinipal.jpeg',
+          availableUnits: 0,
+        });
+      }
+      const city = cityMap.get(property.city)!;
+      city.availableUnits += 1;
+    });
+
+    return Array.from(cityMap.values());
+  }, [properties]);
 
   // Filter cities based on search query
   const filteredCities = useMemo(() => {
-    if (!searchQuery.trim()) return CITIES;
-    return CITIES.filter(city =>
+    if (!searchQuery.trim()) return availableCities;
+    return availableCities.filter(city =>
       city.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [searchQuery]);
+  }, [searchQuery, availableCities]);
 
-  // Get spaces for selected city
+  // Convert properties to spaces format and filter by city
   const citySpaces = useMemo(() => {
     if (!selectedCity) return [];
-    return SPACES.filter(space => space.cityId === selectedCity.id);
-  }, [selectedCity]);
+
+    return properties
+      .filter(property => property.city === selectedCity.name)
+      .map(property => ({
+        id: property.id,
+        name: property.name,
+        category: 'PRO', // You can add category field to property table if needed
+        city: property.city,
+        cityId: selectedCity.id,
+        location: property.address,
+        image: property.images && property.images.length > 0
+          ? property.images[0]
+          : '/img/living.png',
+        dailyRate: property.base_price_clp,
+        validityNote: '',
+        amenities: property.amenities || [],
+        description: property.description || '',
+        whatsappNumber: '+56912345678', // You can add this to property table if needed
+        ownerName: 'Homested Chile',
+      } as Space));
+  }, [selectedCity, properties]);
 
   const handleSearch = () => {
     // Auto-select if only one result
@@ -66,6 +125,23 @@ export default function UnitSelection() {
     selectUnit(unit);
     // Context auto-navigates to 'days-selection'
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-900">
+        <Header />
+        <div className="flex items-center justify-center h-[calc(100vh-80px)]">
+          <div className="text-center">
+            <svg className="w-12 h-12 animate-spin text-emerald-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            <p className="text-slate-400">Cargando propiedades disponibles...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-900">
@@ -184,11 +260,30 @@ export default function UnitSelection() {
         </div>
       )}
 
-      {/* No city selected message */}
-      {!selectedCity && (
+      {/* No properties available */}
+      {!selectedCity && availableCities.length === 0 && (
         <div className="py-12 px-6">
           <div className="max-w-2xl mx-auto text-center">
-            <div className="text-6xl mb-4">🗺️</div>
+            <svg className="w-24 h-24 text-slate-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            <h3 className="text-white text-xl font-semibold mb-2">
+              No hay propiedades disponibles
+            </h3>
+            <p className="text-slate-400">
+              Aún no tenemos propiedades publicadas. Vuelve pronto para ver nuestras opciones.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* No city selected message */}
+      {!selectedCity && availableCities.length > 0 && (
+        <div className="py-12 px-6">
+          <div className="max-w-2xl mx-auto text-center">
+            <svg className="w-24 h-24 text-slate-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+            </svg>
             <h3 className="text-white text-xl font-semibold mb-2">
               Selecciona una ciudad
             </h3>

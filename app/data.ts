@@ -106,6 +106,36 @@ export const ACCOMMODATION_CATEGORIES: AccommodationCategory[] = [
 // CITIES, AMENITIES & SPACES DATA
 // ============================================
 
+// Lista de ciudades principales de Chile
+export const CHILE_CITIES = [
+  'Arica',
+  'Iquique',
+  'Antofagasta',
+  'Calama',
+  'Copiapó',
+  'La Serena',
+  'Coquimbo',
+  'Valparaíso',
+  'Viña del Mar',
+  'Santiago',
+  'Rancagua',
+  'Talca',
+  'Curicó',
+  'Concepción',
+  'Talcahuano',
+  'Los Ángeles',
+  'Chillán',
+  'Temuco',
+  'Valdivia',
+  'Osorno',
+  'Puerto Montt',
+  'Puerto Varas',
+  'Coyhaique',
+  'Punta Arenas',
+];
+
+// Esta es la lista antigua para mantener compatibilidad
+// Ahora se generará dinámicamente desde las propiedades
 export const CITIES: City[] = [
   {
     id: 'santiago',

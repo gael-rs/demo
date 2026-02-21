@@ -8,34 +8,8 @@
  * ============================================
  */
 
-import { LoginPayload, RegisterPayload, AuthResponse, User } from '../types';
+import { LoginPayload, RegisterPayload, AuthResponse } from '../types';
 import { supabase } from '../lib/supabase';
-import { User as SupabaseUser } from '@supabase/supabase-js';
-import { getUserProfile, syncUserProfile } from './user.service';
-
-/**
- * HELPER: Mapear usuario de Supabase a tipo User de la app
- * Prioriza datos de public.users sobre user_metadata
- */
-async function mapSupabaseUserToAppUser(supabaseUser: SupabaseUser): Promise<User> {
-  // Intentar obtener datos desde public.users
-  const profile = await getUserProfile(supabaseUser.id);
-
-  if (profile) {
-    return profile;
-  }
-
-  // Fallback: usar user_metadata si no existe en public.users
-  // (puede pasar durante el registro si el trigger falla)
-  await syncUserProfile();
-
-  return {
-    id: supabaseUser.id,
-    email: supabaseUser.email || '',
-    name: supabaseUser.user_metadata?.name || '',
-    phone: supabaseUser.user_metadata?.phone,
-  };
-}
 
 /**
  * HELPER: Traducir errores de Supabase al español
@@ -91,11 +65,19 @@ export async function loginUser(payload: LoginPayload): Promise<AuthResponse> {
       };
     }
 
-    const user = await mapSupabaseUserToAppUser(data.user);
+    // Obtener perfil completo del usuario desde el servidor
+    const sessionResponse = await checkSession();
+
+    if (!sessionResponse.success || !sessionResponse.user) {
+      return {
+        success: false,
+        error: 'Error al cargar perfil de usuario',
+      };
+    }
 
     return {
       success: true,
-      user,
+      user: sessionResponse.user,
       token: data.session.access_token,
     };
   } catch (error) {
@@ -141,11 +123,19 @@ export async function registerUser(payload: RegisterPayload): Promise<AuthRespon
       };
     }
 
-    const user = await mapSupabaseUserToAppUser(data.user);
+    // Obtener perfil completo del usuario desde el servidor
+    const sessionResponse = await checkSession();
+
+    if (!sessionResponse.success || !sessionResponse.user) {
+      return {
+        success: false,
+        error: 'Error al cargar perfil de usuario',
+      };
+    }
 
     return {
       success: true,
-      user,
+      user: sessionResponse.user,
       token: data.session.access_token,
     };
   } catch (error) {
@@ -160,60 +150,50 @@ export async function registerUser(payload: RegisterPayload): Promise<AuthRespon
  * LOGOUT
  * ------
  * Cierra la sesión del usuario actual con Supabase.
+ * Supabase limpia automáticamente el localStorage.
  */
 export async function logoutUser(): Promise<void> {
   try {
     await supabase.auth.signOut();
   } catch {
-    // Ignorar errores de logout, siempre limpiar sesión local
-  } finally {
-    clearSession();
+    // Ignorar errores de logout
+    // Supabase limpia automáticamente su localStorage
   }
 }
 
 /**
  * CHECK SESSION
  * -------------
- * Verifica si hay una sesión activa en Supabase.
- * Útil para restaurar sesión al cargar la app.
+ * Verifica si hay una sesión activa.
+ * OPTIMIZADO: Usa Route Handler que hace todo en una sola llamada
  *
  * @returns AuthResponse con usuario si la sesión es válida
  */
 export async function checkSession(): Promise<AuthResponse> {
   try {
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    const response = await fetch('/api/auth/session', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include', // Importante para enviar cookies
+      cache: 'no-store',
+    });
 
-    if (sessionError || !session) {
-      clearSession();
-      return {
-        success: false,
-        error: 'No hay sesión activa',
-      };
+    if (!response.ok) {
+      if (response.status === 401) {
+        return {
+          success: false,
+          error: 'No hay sesión activa',
+        };
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    // Obtener datos frescos del usuario
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      clearSession();
-      return {
-        success: false,
-        error: 'No hay sesión activa',
-      };
-    }
-
-    const appUser = await mapSupabaseUserToAppUser(user);
-
-    // Persistir sesión en localStorage
-    persistSession(appUser, session.access_token);
-
-    return {
-      success: true,
-      user: appUser,
-      token: session.access_token,
-    };
+    const data = await response.json();
+    return data;
   } catch (error) {
-    clearSession();
+    console.error('Error checking session:', error);
     return {
       success: false,
       error: 'Error al verificar sesión',
@@ -222,31 +202,15 @@ export async function checkSession(): Promise<AuthResponse> {
 }
 
 /**
- * PERSIST SESSION
- * ---------------
- * Guarda la sesión en localStorage para persistencia.
+ * NOTA SOBRE PERSISTENCIA:
+ * -----------------------
+ * Supabase maneja automáticamente la persistencia del JWT en localStorage.
+ * Guarda: access_token, refresh_token, expires_at, y user metadata.
+ * No es necesario duplicar esta funcionalidad manualmente.
  *
- * @param user - Usuario autenticado
- * @param token - Token de sesión
+ * La clave de localStorage que usa Supabase es:
+ * sb-<project-ref>-auth-token
  *
- * TODO Backend: Considerar usar httpOnly cookies en lugar de localStorage
- * para mayor seguridad en producción.
+ * TODO Backend: Para producción, considerar configurar Supabase con
+ * httpOnly cookies para mayor seguridad.
  */
-export function persistSession(user: User, token: string): void {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('auth_token', token);
-    localStorage.setItem('auth_user', JSON.stringify(user));
-  }
-}
-
-/**
- * CLEAR SESSION
- * -------------
- * Limpia los datos de sesión guardados.
- */
-export function clearSession(): void {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('auth_user');
-  }
-}

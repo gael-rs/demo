@@ -1,105 +1,249 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useBooking } from '../context';
-import { calculatePrice, AMENITIES, SPACES } from '../data';
+import { AMENITIES, SPACES } from '../data';
 import Header from './Header';
+import Footer from './Footer';
 import BookingInputField from './BookingInputField';
+import Modal from './Modal';
+import { getDiscountRulesForProperty } from '../services/pricing.service';
+import type { DiscountRule } from '../services/pricing.service';
+
+const MONTHS_ES = [
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+];
+const DAYS_HEADER = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
 
 export default function DaysSelection() {
-  const { state, setDays, goToStep, processPayment, currency, convertPrice } = useBooking();
+  const { state, setDays, setDates, goToStep, processPayment, currency, convertPrice, setTermsAccepted } = useBooking();
 
-  // Local state for all fields
   const [checkInDate, setCheckInDate] = useState<Date | null>(null);
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
-  const [manualDays, setManualDays] = useState(30);
-  const [kitInicio, setKitInicio] = useState(25000);
-  const [termsAccepted, setTermsAccepted] = useState(false);
-  const [biometricStatus, setBiometricStatus] = useState<'idle' | 'verifying' | 'verified' | 'failed'>('idle');
+  const [hoveredDate, setHoveredDate] = useState<Date | null>(null);
+  const [leftMonth, setLeftMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+  const [discountRules, setDiscountRules] = useState<DiscountRule[]>([]);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [modalConfig, setModalConfig] = useState({ title: '', message: '', type: 'info' as const });
 
-  // Get selected space details
   const selectedSpace = SPACES.find(s => s.id === state.selectedUnit?.id) || SPACES[0];
+  const basePrice = state.selectedUnit?.basePrice || 35000;
 
-  // Calculate days from dates
-  const calculateDaysFromDates = (start: Date, end: Date): number => {
-    const diff = end.getTime() - start.getTime();
-    return Math.ceil(diff / (1000 * 60 * 60 * 24));
-  };
+  // Today at midnight
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
 
-  // Determine effective days (from dates or manual input)
-  const effectiveDays = useMemo(() => {
-    if (checkInDate && checkOutDate && checkOutDate > checkInDate) {
-      return calculateDaysFromDates(checkInDate, checkOutDate);
-    }
-    return manualDays;
-  }, [checkInDate, checkOutDate, manualDays]);
+  const rightMonth = useMemo(
+    () => new Date(leftMonth.getFullYear(), leftMonth.getMonth() + 1, 1),
+    [leftMonth]
+  );
 
-  // Update context when days change
+  // Fetch discount rules once
   useEffect(() => {
-    setDays(effectiveDays);
-  }, [effectiveDays, setDays]);
+    if (state.selectedUnit) {
+      getDiscountRulesForProperty(state.selectedUnit.id).then(setDiscountRules);
+    }
+  }, [state.selectedUnit]);
 
-  // Calculate pricing
-  const pricing = calculatePrice(effectiveDays);
-  const valuePerDay = convertPrice(pricing.pricePerDay);
-  const subtotal = convertPrice(pricing.total);
-  const kitInicioConverted = convertPrice(kitInicio);
-  const total = subtotal + kitInicioConverted;
+  // Client-side price for N nights — mirrors calculatePropertyPrice logic
+  const computePriceForDays = useCallback((days: number): number => {
+    const applicable = discountRules
+      .filter(r => r.min_days <= days && r.max_days >= days)
+      .sort((a, b) => b.discount_percentage - a.discount_percentage);
+    const discount = applicable[0]?.discount_percentage ?? 0;
+    return basePrice - Math.round((basePrice * discount) / 100);
+  }, [basePrice, discountRules]);
 
-  // Kit de Inicio handlers
-  const KIT_INCREMENT = 5000;
-  const handleKitIncrease = () => {
-    setKitInicio(prev => prev + KIT_INCREMENT);
+  // Sync dates + days to context when selection is complete
+  useEffect(() => {
+    if (checkInDate && checkOutDate && checkOutDate > checkInDate) {
+      const days = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
+      setDays(days);
+      setDates(checkInDate, checkOutDate);
+    }
+  }, [checkInDate, checkOutDate, setDays, setDates]);
+
+  const effectiveDays =
+    checkInDate && checkOutDate && checkOutDate > checkInDate
+      ? Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24))
+      : 0;
+
+  const valuePerDay = convertPrice(state.pricePerDay);
+  const subtotal = convertPrice(state.totalPrice);
+  const canProceed = effectiveDays > 0;
+
+  // ── Calendar interaction ─────────────────────────────
+  const handleDateClick = (date: Date) => {
+    if (date < today) return;
+
+    if (!checkInDate || (checkInDate && checkOutDate)) {
+      // Start fresh
+      setCheckInDate(date);
+      setCheckOutDate(null);
+    } else {
+      // Have check-in, waiting for check-out
+      if (date.getTime() <= checkInDate.getTime()) {
+        setCheckInDate(date); // clicked on or before check-in → new check-in
+      } else {
+        setCheckOutDate(date);
+      }
+    }
   };
-  const handleKitDecrease = () => {
-    setKitInicio(prev => Math.max(0, prev - KIT_INCREMENT));
+
+  const prevMonth = () => {
+    setLeftMonth(prev => {
+      const candidate = new Date(prev.getFullYear(), prev.getMonth() - 1, 1);
+      const floor = new Date(today.getFullYear(), today.getMonth(), 1);
+      return candidate >= floor ? candidate : prev;
+    });
   };
 
-  // Biometric validation
-  const handleBiometricVerify = async () => {
-    setBiometricStatus('verifying');
-    // Simulate biometric verification
-    setTimeout(() => {
-      const success = Math.random() > 0.15; // 85% success rate
-      setBiometricStatus(success ? 'verified' : 'failed');
-    }, 2500);
+  const nextMonth = () => {
+    setLeftMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
   };
 
-  // Payment handler
-  const handlePayment = async () => {
-    setPaymentError(null);
+  const handleReset = () => {
+    setCheckInDate(null);
+    setCheckOutDate(null);
+  };
 
-    // Process payment (now includes verification and access code generation)
-    const paymentSuccess = await processPayment();
+  // ── Render one month grid ─────────────────────────────
+  const renderMonthGrid = (monthStart: Date) => {
+    const year = monthStart.getFullYear();
+    const month = monthStart.getMonth();
+    const firstDayOfWeek = new Date(year, month, 1).getDay(); // 0 = Sunday
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-    if (!paymentSuccess) {
-      setPaymentError('El pago falló. Por favor, intenta nuevamente.');
-      return;
+    // The "end" used for range highlight: confirmed checkout, or hovered date while picking checkout
+    const effectiveEnd = checkOutDate || (checkInDate && !checkOutDate ? hoveredDate : null);
+
+    const cells: React.ReactNode[] = [];
+
+    // Offset spacers
+    for (let i = 0; i < firstDayOfWeek; i++) {
+      cells.push(<div key={`sp-${i}`} />);
     }
 
-    // Navigate directly to access-granted
-    goToStep('access-granted');
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, month, day);
+      date.setHours(0, 0, 0, 0);
+
+      const isPast = date < today;
+      const isToday = date.getTime() === today.getTime();
+      const isCheckIn = checkInDate && date.getTime() === checkInDate.getTime();
+      const isCheckOut = checkOutDate && date.getTime() === checkOutDate.getTime();
+      const isInRange =
+        checkInDate && effectiveEnd &&
+        date > checkInDate && date < effectiveEnd &&
+        effectiveEnd > checkInDate;
+
+      // Price preview: for check-in and days in the confirmed range
+      let priceText: string | null = null;
+      if (checkInDate && checkOutDate) {
+        if (isCheckIn) {
+          // Show price for first day
+          priceText = convertPrice(computePriceForDays(1)).toLocaleString('es-CL');
+        } else if (isInRange && date > checkInDate && date < checkOutDate) {
+          // Show accumulated price for intermediate days
+          const nights = Math.ceil((date.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
+          priceText = convertPrice(computePriceForDays(nights)).toLocaleString('es-CL');
+        }
+      }
+
+      cells.push(
+        <div
+          key={day}
+          className={[
+            'relative flex flex-col items-center justify-center select-none transition-colors',
+            isPast ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer',
+            'min-h-[60px]', // Altura mínima fija para evitar que se aplasten
+          ].join(' ')}
+          onClick={() => !isPast && handleDateClick(date)}
+          onMouseEnter={() => {
+            if (!isPast && checkInDate && !checkOutDate) setHoveredDate(date);
+          }}
+          onMouseLeave={() => setHoveredDate(null)}
+        >
+          <div
+            className={[
+              'w-10 h-10 flex items-center justify-center rounded-full text-base transition-all',
+              isCheckIn || isCheckOut
+                ? 'bg-emerald-500 text-white font-bold'
+                : isToday
+                  ? 'ring-2 ring-emerald-400 text-emerald-300 font-medium'
+                  : isInRange
+                    ? 'bg-emerald-500/15 text-slate-200'
+                    : 'text-slate-300',
+              !isPast && !isCheckIn && !isCheckOut && !isInRange ? 'hover:bg-slate-700/50' : '',
+            ].join(' ')}
+          >
+            {day}
+          </div>
+          {priceText && (
+            <span className="text-emerald-400 text-[10px] leading-tight mt-1 font-medium">{priceText}</span>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex-1 min-w-0">
+        <p className="text-slate-300 font-semibold text-center mb-2 capitalize text-sm">
+          {MONTHS_ES[month]} {year}
+        </p>
+        <div className="grid grid-cols-7">
+          {DAYS_HEADER.map(d => (
+            <div key={d} className="text-slate-500 text-xs text-center py-1 font-medium">{d}</div>
+          ))}
+          {cells}
+        </div>
+      </div>
+    );
   };
 
-  // Validation: can proceed to payment?
-  const canProceed = useMemo(() => {
-    return (
-      effectiveDays > 0 &&
-      termsAccepted &&
-      biometricStatus === 'verified'
-    );
-  }, [effectiveDays, termsAccepted, biometricStatus]);
+  // ── Helpers ───────────────────────────────────────────
+  const formatDate = (d: Date) => `${d.getDate()} ${MONTHS_ES[d.getMonth()].slice(0, 3)}`;
 
-  // Get amenity icons for selected space
   const spaceAmenities = selectedSpace.amenities
     .map(amenityId => AMENITIES.find(a => a.id === amenityId))
     .filter(Boolean)
-    .slice(0, 8); // Max 8 amenities to display
+    .slice(0, 8);
 
-  // Date validation error
-  const dateError = checkInDate && checkOutDate && checkOutDate <= checkInDate;
+  // ── Payment ───────────────────────────────────────────
+  const handlePayment = async () => {
+    if (!state.termsAccepted) {
+      setModalConfig({
+        title: 'Términos y Condiciones',
+        message: 'Debes aceptar los términos y condiciones para continuar con el pago.',
+        type: 'warning'
+      });
+      setShowModal(true);
+      return;
+    }
 
+    setPaymentError(null);
+    const ok = await processPayment();
+    if (!ok) {
+      setModalConfig({
+        title: 'Error en el pago',
+        message: 'El pago falló. Por favor, intenta nuevamente.',
+        type: 'error'
+      });
+      setShowModal(true);
+    } else {
+      goToStep('identity-verification');
+    }
+  };
+
+  // ── Render ────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-slate-900">
       <Header />
@@ -117,8 +261,7 @@ export default function DaysSelection() {
         </button>
 
         {/* Space Summary Card */}
-        <div className="relative mb-6 rounded-2xl overflow-hidden border-2 border-amber-500/50 shadow-xl shadow-amber-500/10">
-          {/* Header: City + Category */}
+        <div className="relative mb-6 rounded-2xl overflow-hidden border-2 border-emerald-500/50 shadow-xl shadow-emerald-500/10">
           <div className="flex justify-between items-center px-4 py-3 bg-slate-800/90">
             <div className="flex items-center gap-2">
               <svg className="w-4 h-4 text-slate-400" fill="currentColor" viewBox="0 0 24 24">
@@ -126,21 +269,19 @@ export default function DaysSelection() {
               </svg>
               <span className="text-white font-medium">{selectedSpace.city}</span>
             </div>
-            <div className="px-3 py-1 bg-amber-500 rounded-full">
-              <span className="text-slate-900 font-bold text-xs tracking-wide">
+            <div className="px-3 py-1 bg-emerald-500 rounded-full">
+              <span className="text-white font-bold text-xs tracking-wide">
                 {selectedSpace.category}
               </span>
             </div>
           </div>
 
-          {/* Image */}
           <img
             src={selectedSpace.image}
             alt={selectedSpace.name}
             className="w-full h-48 object-cover"
           />
 
-          {/* Amenities Row */}
           <div className="flex justify-center gap-2 p-3 bg-slate-800/90">
             {spaceAmenities.map(amenity => (
               <div
@@ -154,54 +295,68 @@ export default function DaysSelection() {
           </div>
         </div>
 
-        {/* Booking Form */}
-        <div className="space-y-3 mb-6">
-          {/* LLEGADA */}
-          <BookingInputField
-            label="LLEGADA"
-            type="date"
-            icon="calendar"
-            value={checkInDate}
-            onChange={(date: Date) => setCheckInDate(date)}
-          />
+        {/* ── Interactive Calendar ── */}
+        <div className="bg-slate-800 rounded-2xl p-4 mb-4">
+          {/* Nav row */}
+          <div className="flex items-center justify-between mb-3">
+            <button
+              onClick={prevMonth}
+              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
 
-          {/* SALIDA */}
-          <BookingInputField
-            label="SALIDA"
-            type="date"
-            icon="calendar"
-            value={checkOutDate}
-            onChange={(date: Date) => setCheckOutDate(date)}
-          />
+            <button
+              onClick={handleReset}
+              className="text-emerald-400 text-xs hover:text-emerald-300 transition-colors"
+            >
+              Limpiar
+            </button>
 
-          {dateError && (
-            <div className="text-red-400 text-sm -mt-2">
-              La fecha de salida debe ser posterior a la llegada
-            </div>
-          )}
-
-          {/* CANTIDAD DE DÍAS */}
-          <div className="relative">
-            <label className="block text-slate-400 text-xs uppercase mb-1 font-medium tracking-wide">
-              CANTIDAD DE DÍAS
-            </label>
-            <input
-              type="number"
-              value={effectiveDays}
-              onChange={e => setManualDays(parseInt(e.target.value) || 1)}
-              readOnly={!!(checkInDate && checkOutDate && !dateError)}
-              className={`
-                w-full px-4 py-3 bg-slate-800 border rounded-lg transition-all text-white text-center text-lg font-semibold
-                ${checkInDate && checkOutDate && !dateError
-                  ? 'border-slate-700 cursor-not-allowed'
-                  : 'border-slate-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50'
-                }
-              `}
-              min={1}
-            />
+            <button
+              onClick={nextMonth}
+              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
           </div>
 
-          {/* VALOR × DÍA */}
+          {/* Two month grids stacked */}
+          <div className="flex flex-col gap-5">
+            {renderMonthGrid(leftMonth)}
+            {renderMonthGrid(rightMonth)}
+          </div>
+
+          {/* Selection summary bar */}
+          <div className="mt-3 pt-3 border-t border-slate-700 flex items-center justify-center gap-2 text-sm flex-wrap">
+            {checkInDate ? (
+              <>
+                <span className="text-emerald-400 font-semibold">{formatDate(checkInDate)}</span>
+                <span className="text-slate-600">→</span>
+                {checkOutDate ? (
+                  <>
+                    <span className="text-emerald-400 font-semibold">{formatDate(checkOutDate)}</span>
+                    <span className="text-slate-600">·</span>
+                    <span className="text-slate-300 font-medium">
+                      {effectiveDays} noche{effectiveDays !== 1 ? 's' : ''}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-slate-500 italic">selecciona fecha de salida</span>
+                )}
+              </>
+            ) : (
+              <span className="text-slate-500 italic">Selecciona fecha de llegada</span>
+            )}
+          </div>
+        </div>
+
+        {/* Pricing summary */}
+        <div className="space-y-3 mb-6">
           <BookingInputField
             label="VALOR × DÍA"
             type="currency"
@@ -210,174 +365,90 @@ export default function DaysSelection() {
             currency={currency}
           />
 
-          {/* SUBTOTAL ESTADÍA */}
           <BookingInputField
-            label="SUBTOTAL ESTADÍA"
+            label="TOTAL A PAGAR"
             type="currency"
             value={subtotal}
-            readOnly
-            currency={currency}
-          />
-
-          {/* Kit Inicio */}
-          <div className="relative">
-            <label className="block text-slate-400 text-xs uppercase mb-1 font-medium tracking-wide">
-              Kit Inicio
-            </label>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleKitDecrease}
-                className="w-10 h-10 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold text-xl flex items-center justify-center transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={kitInicio <= 0}
-              >
-                -
-              </button>
-              <input
-                type="text"
-                value={new Intl.NumberFormat(currency === 'USD' ? 'en-US' : 'es-CL', {
-                  style: 'currency',
-                  currency: currency,
-                  minimumFractionDigits: 0,
-                }).format(kitInicioConverted)}
-                readOnly
-                className="flex-1 px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white text-center font-medium cursor-not-allowed"
-              />
-              <button
-                onClick={handleKitIncrease}
-                className="w-10 h-10 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold text-xl flex items-center justify-center transition-all active:scale-95"
-              >
-                +
-              </button>
-            </div>
-          </div>
-
-          {/* TOTAL ESTADÍA */}
-          <BookingInputField
-            label="TOTAL ESTADÍA"
-            type="currency"
-            value={total}
             readOnly
             highlighted
             currency={currency}
           />
         </div>
 
-        {/* Terms Checkbox */}
-        <label className="flex items-start gap-3 mb-6 cursor-pointer group">
-          <input
-            type="checkbox"
-            checked={termsAccepted}
-            onChange={e => setTermsAccepted(e.target.checked)}
-            className="mt-1 w-5 h-5 rounded border-2 border-slate-600 bg-slate-800 text-emerald-500 focus:ring-2 focus:ring-emerald-500/50 cursor-pointer"
-          />
-          <span className="text-white text-sm group-hover:text-slate-200 transition-colors">
-            Aceptar términos y condiciones
-          </span>
-        </label>
-
-        {/* Biometric Validation */}
+        {/* Terms and Conditions Checkbox */}
         <div className="mb-6">
-          <h3 className="text-center text-slate-300 text-sm uppercase tracking-wide mb-4 font-medium">
-            VALIDACIÓN BIOMÉTRICA
-          </h3>
-
-          <div className="relative w-32 h-40 mx-auto bg-slate-800 rounded-xl overflow-hidden border-2 border-slate-700">
-            {/* Idle State */}
-            {biometricStatus === 'idle' && (
-              <div className="w-full h-full flex items-center justify-center text-slate-600">
-                <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                </svg>
-              </div>
-            )}
-
-            {/* Verifying State */}
-            {biometricStatus === 'verifying' && (
-              <div className="w-full h-full flex items-center justify-center bg-emerald-500/10">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-500 border-t-transparent"></div>
-              </div>
-            )}
-
-            {/* Verified State */}
-            {biometricStatus === 'verified' && (
-              <div className="w-full h-full flex items-center justify-center bg-emerald-500/20">
-                <svg className="w-16 h-16 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <label className="flex items-start gap-3 cursor-pointer group">
+            <div className="relative flex-shrink-0 mt-0.5">
+              <input
+                type="checkbox"
+                checked={state.termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                className="peer sr-only"
+              />
+              <div className="w-5 h-5 border-2 border-slate-600 rounded bg-slate-700 peer-checked:bg-emerald-500 peer-checked:border-emerald-500 transition-all flex items-center justify-center">
+                <svg
+                  className={`w-3 h-3 text-white transition-opacity ${state.termsAccepted ? 'opacity-100' : 'opacity-0'}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-            )}
-
-            {/* Failed State */}
-            {biometricStatus === 'failed' && (
-              <div className="w-full h-full flex items-center justify-center bg-red-500/20">
-                <svg className="w-16 h-16 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </div>
-            )}
-          </div>
-
-          {/* Biometric Action Buttons */}
-          {biometricStatus === 'idle' && (
-            <button
-              onClick={handleBiometricVerify}
-              className="mt-4 w-full py-3 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg transition-colors"
-            >
-              Iniciar validación
-            </button>
-          )}
-
-          {biometricStatus === 'failed' && (
-            <button
-              onClick={handleBiometricVerify}
-              className="mt-4 w-full py-3 bg-red-600 hover:bg-red-500 text-white font-medium rounded-lg transition-colors"
-            >
-              Reintentar
-            </button>
-          )}
-
-          {biometricStatus === 'verified' && (
-            <div className="mt-4 text-center text-emerald-400 text-sm font-medium">
-              ✓ Verificación exitosa
             </div>
-          )}
+            <span className="text-slate-300 text-sm leading-relaxed group-hover:text-white transition-colors">
+              Acepto los{' '}
+              <a
+                href="/terminos-y-condiciones"
+                target="_blank"
+                className="text-emerald-400 hover:text-emerald-300 underline font-medium"
+                onClick={(e) => e.stopPropagation()}
+              >
+                términos y condiciones
+              </a>
+              {' '}y la{' '}
+              <a
+                href="/politica-de-privacidad"
+                target="_blank"
+                className="text-emerald-400 hover:text-emerald-300 underline font-medium"
+                onClick={(e) => e.stopPropagation()}
+              >
+                política de privacidad
+              </a>
+            </span>
+          </label>
         </div>
-
-        {/* Payment Error */}
-        {paymentError && (
-          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-            <p className="text-red-400 text-sm text-center">{paymentError}</p>
-          </div>
-        )}
 
         {/* Payment Button */}
         <button
           onClick={handlePayment}
-          disabled={!canProceed || state.paymentStatus === 'processing'}
+          disabled={!canProceed || !state.termsAccepted || state.paymentStatus === 'processing'}
           className={`
-            w-full py-5 rounded-xl transition-all font-bold text-xl tracking-wide
-            ${canProceed && state.paymentStatus !== 'processing'
-              ? 'bg-amber-500 hover:bg-amber-400 text-slate-900 shadow-lg shadow-amber-500/30 active:scale-[0.98]'
+            w-full py-5 rounded-xl transition-all font-bold text-lg tracking-wide relative overflow-hidden
+            ${canProceed && state.termsAccepted && state.paymentStatus !== 'processing'
+              ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg shadow-emerald-500/30 active:scale-[0.98]'
               : 'bg-slate-700 text-slate-500 cursor-not-allowed'
             }
           `}
         >
           {state.paymentStatus === 'processing' ? (
             <div className="flex items-center justify-center gap-3">
-              <div className="animate-spin rounded-full h-5 w-5 border-3 border-slate-900 border-t-transparent"></div>
-              <span>PROCESANDO...</span>
+              <div className="animate-spin rounded-full h-5 w-5 border-3 border-white border-t-transparent"></div>
+              <span>PROCESANDO PAGO...</span>
             </div>
           ) : (
-            <span>PAGAR</span>
+            <div className="flex items-center justify-center gap-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+              <span>PROCEDER AL PAGO</span>
+            </div>
           )}
         </button>
 
-        {!canProceed && (
-          <div className="mt-3 text-center text-slate-400 text-xs">
-            {!termsAccepted && '• Acepta los términos y condiciones'}
-            {termsAccepted && biometricStatus !== 'verified' && '• Completa la validación biométrica'}
-          </div>
-        )}
+        <p className="mt-4 text-center text-slate-400 text-xs">
+          Después del pago, deberás verificar tu identidad
+        </p>
       </div>
 
       {/* Floating WhatsApp Button */}
@@ -392,6 +463,18 @@ export default function DaysSelection() {
           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
         </svg>
       </a>
+
+      {/* Footer */}
+      <Footer />
+
+      {/* Modal */}
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        type={modalConfig.type}
+      />
     </div>
   );
 }

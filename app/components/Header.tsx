@@ -14,6 +14,7 @@ export default function Header({ onCtaClick }: HeaderProps) {
   const [isCurrencyMenuOpen, setIsCurrencyMenuOpen] = useState(false);
 
   const menuItems = [
+    { label: 'Mis Reservas', href: '/mis-reservas', authRequired: true },
     { label: 'Cómo funciona', href: '#como-funciona' },
     { label: 'Beneficios', href: '#beneficios' },
     { label: 'Precios', href: '#precios' },
@@ -32,7 +33,14 @@ export default function Header({ onCtaClick }: HeaderProps) {
   };
 
   const handleLogoClick = () => {
-    goToStep('landing');
+    // Si estamos en la página raíz, hacer scroll arriba
+    if (window.location.pathname === '/') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      goToStep('landing');
+    } else {
+      // Si estamos en otra página, redirigir a la raíz
+      window.location.href = '/';
+    }
   };
 
   const handleCurrencyChange = (newCurrency: 'CLP' | 'USD') => {
@@ -59,15 +67,18 @@ export default function Header({ onCtaClick }: HeaderProps) {
           </div>
 
           <nav className="hidden md:flex items-center gap-8">
-            {menuItems.map(item => (
-              <a
-                key={item.href}
-                href={item.href}
-                className="text-slate-400 hover:text-white transition-colors text-sm"
-              >
-                {item.label}
-              </a>
-            ))}
+            {menuItems.map(item => {
+              if (item.authRequired && !authState.isAuthenticated) return null;
+              return (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="text-slate-400 hover:text-white transition-colors text-sm"
+                >
+                  {item.label}
+                </a>
+              );
+            })}
           </nav>
 
           <div className="flex items-center gap-3">
@@ -136,7 +147,9 @@ export default function Header({ onCtaClick }: HeaderProps) {
             </div>
 
             {/* Auth Button - Desktop */}
-            {authState.isAuthenticated && authState.user ? (
+            {authState.loading ? (
+              <div className="hidden sm:block w-24 h-10 bg-slate-800 rounded-lg animate-pulse" />
+            ) : authState.isAuthenticated && authState.user ? (
               <div className="relative hidden sm:block">
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
@@ -161,6 +174,16 @@ export default function Header({ onCtaClick }: HeaderProps) {
                       <p className="text-white font-medium truncate">{authState.user.name}</p>
                       <p className="text-slate-400 text-sm truncate">{authState.user.email}</p>
                     </div>
+                    <a
+                      href="/mis-reservas"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="w-full px-4 py-3 text-left text-slate-300 hover:bg-slate-700 hover:text-white transition-colors flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                      </svg>
+                      Mis Reservas
+                    </a>
                     <button
                       onClick={handleLogout}
                       className="w-full px-4 py-3 text-left text-slate-300 hover:bg-slate-700 hover:text-white transition-colors flex items-center gap-2"
@@ -217,7 +240,7 @@ export default function Header({ onCtaClick }: HeaderProps) {
           <div className="md:hidden bg-slate-800 border-t border-slate-700">
             <nav className="flex flex-col px-6 py-4">
               {/* User Info (Mobile) */}
-              {authState.isAuthenticated && authState.user && (
+              {!authState.loading && authState.isAuthenticated && authState.user && (
                 <div className="flex items-center gap-3 pb-4 mb-4 border-b border-slate-700">
                   <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center">
                     <span className="text-white font-medium">
@@ -231,16 +254,19 @@ export default function Header({ onCtaClick }: HeaderProps) {
                 </div>
               )}
 
-              {menuItems.map(item => (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setIsMenuOpen(false)}
-                  className="py-3 text-slate-300 hover:text-white transition-colors border-b border-slate-700"
-                >
-                  {item.label}
-                </a>
-              ))}
+              {menuItems.map(item => {
+                if (item.authRequired && !authState.isAuthenticated) return null;
+                return (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setIsMenuOpen(false)}
+                    className="py-3 text-slate-300 hover:text-white transition-colors border-b border-slate-700"
+                  >
+                    {item.label}
+                  </a>
+                );
+              })}
 
               {/* Currency Selector (Mobile) */}
               <div className="py-3 border-b border-slate-700">
@@ -280,7 +306,9 @@ export default function Header({ onCtaClick }: HeaderProps) {
               </div>
 
               {/* Auth & CTA Buttons (Mobile) */}
-              {authState.isAuthenticated ? (
+              {authState.loading ? (
+                <div className="mt-4 w-full h-12 bg-slate-700 rounded-lg animate-pulse" />
+              ) : authState.isAuthenticated ? (
                 <button
                   onClick={handleLogout}
                   className="mt-4 w-full py-3 bg-red-600 hover:bg-red-500 text-white font-medium rounded-lg transition-colors"

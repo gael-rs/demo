@@ -1,3 +1,4 @@
+
 export { default as Landing } from './Landing';
 export { default as UnitSelection } from './UnitSelection';
 export { default as DaysSelection } from './DaysSelection';
@@ -8,6 +9,7 @@ export { default as ExtendStay } from './ExtendStay';
 export { default as Expiration } from './Expiration';
 export { default as Header } from './Header';
 export { default as Footer } from './Footer';
+export { default as Modal } from './Modal';
 export { default as CategoryCarousel } from './CategoryCarousel';
 export { default as CategoryCard } from './CategoryCard';
 export { default as SearchBar } from './SearchBar';
@@ -16,3 +18,6 @@ export { default as AmenitiesGrid } from './AmenitiesGrid';
 export { default as WhatsAppButton } from './WhatsAppButton';
 export { default as SpaceDetailsCard } from './SpaceDetailsCard';
 export { default as BookingInputField } from './BookingInputField';
+export { default as CameraCapture } from './CameraCapture';
+export { default as DocumentUpload } from './DocumentUpload';
+export { default as PropertyImageCarousel } from './PropertyImageCarousel';

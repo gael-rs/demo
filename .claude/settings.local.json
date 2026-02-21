@@ -1,11 +1,13 @@
 {
+  "permissions": {
+    "allow": [
+      "mcp__claude_ai_Notion__notion-update-page",
+      "mcp__claude_ai_Notion__notion-fetch",
+      "Bash(npm run build:*)"
+    ]
+  },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "supabase"
-  ],
-  "permissions": {
-    "allow": [
-      
-    ]
-  }
+  ]
 }

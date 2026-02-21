@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 export default function Footer() {
   return (
     <footer className="bg-slate-950 border-t border-slate-800">
@@ -47,20 +49,37 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="text-white font-semibold mb-4">Compañía</h4>
+            <h4 className="text-white font-semibold mb-4">Legal</h4>
             <ul className="space-y-2">
-              <li><a href="#" className="text-slate-400 hover:text-white text-sm transition-colors">Sobre nosotros</a></li>
-              <li><a href="#" className="text-slate-400 hover:text-white text-sm transition-colors">Inversionistas</a></li>
-              <li><a href="#" className="text-slate-400 hover:text-white text-sm transition-colors">Contacto</a></li>
-              <li><a href="#" className="text-slate-400 hover:text-white text-sm transition-colors">Términos y condiciones</a></li>
+              <li>
+                <Link href="/terminos-y-condiciones" className="text-slate-400 hover:text-white text-sm transition-colors">
+                  Términos y condiciones
+                </Link>
+              </li>
+              <li>
+                <Link href="/politica-de-privacidad" className="text-slate-400 hover:text-white text-sm transition-colors">
+                  Política de privacidad
+                </Link>
+              </li>
+              <li><a href="mailto:contacto@homested.cl" className="text-slate-400 hover:text-white text-sm transition-colors">Contacto</a></li>
+              <li><a href="mailto:soporte@homested.cl" className="text-slate-400 hover:text-white text-sm transition-colors">Soporte</a></li>
             </ul>
           </div>
         </div>
 
         <div className="pt-8 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-slate-500 text-sm">
-            © 2025 Homested. Todos los derechos reservados.
+            © 2026 Homested SpA. Todos los derechos reservados.
           </p>
+          <div className="flex gap-4 text-xs text-slate-500">
+            <Link href="/terminos-y-condiciones" className="hover:text-slate-300 transition-colors">
+              Términos
+            </Link>
+            <span>•</span>
+            <Link href="/politica-de-privacidad" className="hover:text-slate-300 transition-colors">
+              Privacidad
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

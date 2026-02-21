@@ -37,3 +37,27 @@ input[type="number"]::-webkit-outer-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
+
+/* Swiper carousel styles */
+.swiper-button-next,
+.swiper-button-prev {
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(4px);
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50%;
+  color: white !important;
+}
+
+.swiper-button-next:after,
+.swiper-button-prev:after {
+  font-size: 18px !important;
+}
+
+.swiper-pagination-bullet {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.swiper-pagination-bullet-active {
+  background: #10b981; /* emerald-500 */
+}

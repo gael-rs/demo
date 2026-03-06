@@ -15,7 +15,7 @@ export default function Payment() {
 
   const handlePayment = async () => {
     if (!state.termsAccepted) {
-      alert('Debes aceptar los términos y condiciones para continuar');
+      setError('Debes aceptar los términos y condiciones para continuar');
       return;
     }
 

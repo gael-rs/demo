@@ -14,6 +14,9 @@ export interface Property {
   bedrooms: number;
   bathrooms: number;
   is_active: boolean;
+  lock_provider?: string | null;
+  lock_device_id?: string | null;
+  lock_enabled?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -31,6 +34,9 @@ export interface CreatePropertyData {
   bedrooms?: number;
   bathrooms?: number;
   is_active?: boolean;
+  lock_provider?: string | null;
+  lock_device_id?: string | null;
+  lock_enabled?: boolean;
 }
 
 /**

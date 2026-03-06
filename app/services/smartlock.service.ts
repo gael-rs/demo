@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { supabase } from '@/app/lib/supabase';
 
 export interface AccessCode {
@@ -96,6 +97,132 @@ class NukiLockProvider implements SmartLockProvider {
   }
 }
 
+// In-memory cache for TTLock OAuth token
+let ttlockTokenCache: { token: string; expiresAt: number } | null = null;
+
+/**
+ * TTLock Smart Lock provider
+ * Requires TTLOCK_CLIENT_ID, TTLOCK_CLIENT_SECRET, TTLOCK_USERNAME, TTLOCK_PASSWORD
+ */
+class TTLockProvider implements SmartLockProvider {
+  private baseUrl = 'https://euapi.ttlock.com';
+
+  private async getAccessToken(): Promise<string> {
+    const now = Date.now();
+    if (ttlockTokenCache && ttlockTokenCache.expiresAt > now + 60_000) {
+      return ttlockTokenCache.token;
+    }
+
+    const clientId = process.env.TTLOCK_CLIENT_ID;
+    const clientSecret = process.env.TTLOCK_CLIENT_SECRET;
+    const username = process.env.TTLOCK_USERNAME;
+    const password = process.env.TTLOCK_PASSWORD;
+
+    if (!clientId || !clientSecret || !username || !password) {
+      throw new Error('TTLock credentials not configured');
+    }
+
+    const passwordMd5 = createHash('md5').update(password).digest('hex');
+
+    const params = new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      grant_type: 'password',
+      username,
+      password: passwordMd5,
+    });
+
+    const response = await fetch(`${this.baseUrl}/oauth2/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`TTLock OAuth error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    if (data.errcode && data.errcode !== 0) {
+      throw new Error(`TTLock OAuth error: ${data.errmsg}`);
+    }
+
+    ttlockTokenCache = {
+      token: data.access_token,
+      expiresAt: now + data.expires_in * 1000,
+    };
+
+    return ttlockTokenCache.token;
+  }
+
+  async generatePassword(
+    lockId: string,
+    validFrom: Date,
+    validUntil: Date,
+    name: string
+  ): Promise<{ code: string; passwordId?: string }> {
+    const token = await this.getAccessToken();
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    const params = new URLSearchParams({
+      clientId: process.env.TTLOCK_CLIENT_ID!,
+      accessToken: token,
+      lockId,
+      keyboardPwd: code,
+      keyboardPwdType: '2', // timed password
+      startDate: validFrom.getTime().toString(),
+      endDate: validUntil.getTime().toString(),
+      keyboardPwdName: name,
+      date: Date.now().toString(),
+    });
+
+    const response = await fetch(`${this.baseUrl}/v3/keyboardPwd/add`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`TTLock API error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    if (data.errcode && data.errcode !== 0) {
+      throw new Error(`TTLock API error: ${data.errmsg}`);
+    }
+
+    return { code, passwordId: data.keyboardPwdId?.toString() };
+  }
+
+  async deletePassword(lockId: string, passwordId: string): Promise<void> {
+    const token = await this.getAccessToken();
+
+    const params = new URLSearchParams({
+      clientId: process.env.TTLOCK_CLIENT_ID!,
+      accessToken: token,
+      lockId,
+      keyboardPwdId: passwordId,
+      deleteType: '2',
+      date: Date.now().toString(),
+    });
+
+    const response = await fetch(`${this.baseUrl}/v3/keyboardPwd/delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`TTLock API error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    if (data.errcode && data.errcode !== 0) {
+      throw new Error(`TTLock API error: ${data.errmsg}`);
+    }
+  }
+}
+
 /**
  * Factory to get the appropriate lock provider
  */
@@ -108,6 +235,18 @@ const getLockProvider = (provider: string): SmartLockProvider => {
         return new SimulatedLockProvider();
       }
       return new NukiLockProvider(apiKey);
+    }
+    case 'ttlock': {
+      const hasCredentials =
+        process.env.TTLOCK_CLIENT_ID &&
+        process.env.TTLOCK_CLIENT_SECRET &&
+        process.env.TTLOCK_USERNAME &&
+        process.env.TTLOCK_PASSWORD;
+      if (!hasCredentials) {
+        console.warn('TTLock credentials not configured, falling back to simulated provider');
+        return new SimulatedLockProvider();
+      }
+      return new TTLockProvider();
     }
     case 'simulated':
     default:

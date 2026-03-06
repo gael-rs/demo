@@ -30,6 +30,9 @@ export default function PropertiesPage() {
     bedrooms: 1,
     bathrooms: 1,
     is_active: true,
+    lock_provider: 'simulated',
+    lock_device_id: '',
+    lock_enabled: false,
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -84,6 +87,9 @@ export default function PropertiesPage() {
       bedrooms: property.bedrooms,
       bathrooms: property.bathrooms,
       is_active: property.is_active,
+      lock_provider: property.lock_provider || 'simulated',
+      lock_device_id: property.lock_device_id || '',
+      lock_enabled: property.lock_enabled ?? false,
     });
     setShowForm(true);
   };
@@ -115,6 +121,9 @@ export default function PropertiesPage() {
       bedrooms: 1,
       bathrooms: 1,
       is_active: true,
+      lock_provider: 'simulated',
+      lock_device_id: '',
+      lock_enabled: false,
     });
     setEditingProperty(null);
     setShowForm(false);
@@ -392,6 +401,62 @@ export default function PropertiesPage() {
               <label htmlFor="is_active" className="text-slate-300 font-medium">
                 Propiedad activa (visible para clientes)
               </label>
+            </div>
+
+            {/* Smart Lock Configuration */}
+            <div className="border-t border-slate-700 pt-6">
+              <h3 className="text-slate-200 font-semibold mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                Cerradura Inteligente
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-300 text-sm font-medium mb-2">
+                    Proveedor
+                  </label>
+                  <select
+                    value={formData.lock_provider || 'simulated'}
+                    onChange={(e) => setFormData({ ...formData, lock_provider: e.target.value })}
+                    className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  >
+                    <option value="simulated">Simulado (sin cerradura física)</option>
+                    <option value="ttlock">TTLock</option>
+                    <option value="nuki">Nuki</option>
+                    <option value="august">August</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-300 text-sm font-medium mb-2">
+                    ID del Dispositivo (lockId)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.lock_device_id || ''}
+                    onChange={(e) => setFormData({ ...formData, lock_device_id: e.target.value })}
+                    className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    placeholder="Ej: 12345678"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-3 mt-4">
+                <input
+                  type="checkbox"
+                  id="lock_enabled"
+                  checked={formData.lock_enabled ?? false}
+                  onChange={(e) => setFormData({ ...formData, lock_enabled: e.target.checked })}
+                  className="w-5 h-5 text-emerald-500 bg-slate-700 border-slate-600 rounded focus:ring-2 focus:ring-emerald-500"
+                />
+                <label htmlFor="lock_enabled" className="text-slate-300 font-medium">
+                  Activar sincronización con cerradura física
+                </label>
+              </div>
+              {formData.lock_provider !== 'simulated' && formData.lock_enabled && (
+                <p className="mt-2 text-xs text-yellow-400">
+                  Asegúrate de haber configurado las variables de entorno correspondientes al proveedor seleccionado.
+                </p>
+              )}
             </div>
 
             {/* Submit Buttons */}

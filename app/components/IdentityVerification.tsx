@@ -299,6 +299,7 @@ export default function IdentityVerification() {
               onFileSelected={(file) => handleFileChange(file, setSelfie, setSelfiePreview)}
               preview={selfiePreview || undefined}
               required
+              cameraOnly
             />
 
             {/* Documento frontal */}

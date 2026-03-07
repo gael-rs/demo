@@ -10,6 +10,8 @@ import Expiration from '@/app/features/booking/components/Expiration';
 import Payment from '@/app/features/payment/components/Payment';
 import IdentityVerification from '@/app/features/identity/components/IdentityVerification';
 import { AuthModal } from '@/app/features/auth/components';
+import Header from '@/app/shared/components/Header';
+import Footer from '@/app/shared/components/Footer';
 
 export default function Home() {
   const { state } = useBooking();
@@ -38,8 +40,12 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen">
-      {renderStep()}
+    <main className="min-h-screen bg-slate-900 flex flex-col">
+      <Header />
+      <div className="flex-1">
+        {renderStep()}
+      </div>
+      <Footer />
       <AuthModal />
     </main>
   );

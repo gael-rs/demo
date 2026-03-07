@@ -5,8 +5,6 @@ import { useBooking } from '@/app/context';
 import { AMENITIES } from '@/app/data';
 import { City, Space, Unit } from '@/app/types';
 import { getActiveProperties, Property } from '@/app/features/properties/property.service';
-import Header from '@/app/shared/components/Header';
-import Footer from '@/app/shared/components/Footer';
 import SearchBar from '@/app/features/properties/components/SearchBar';
 import CityCarousel from '@/app/features/properties/components/CityCarousel';
 import SpaceDetailsCard from '@/app/features/properties/components/SpaceDetailsCard';
@@ -154,7 +152,6 @@ export default function UnitSelection() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-900">
-        <Header />
         <div className="flex items-center justify-center h-[calc(100vh-80px)]">
           <div className="text-center">
             <svg className="w-12 h-12 animate-spin text-emerald-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24">
@@ -170,8 +167,6 @@ export default function UnitSelection() {
 
   return (
     <div className="min-h-screen bg-slate-900">
-      <Header />
-
       {/* Search Section */}
       <div className="pt-32 pb-8 px-6">
         <div className="max-w-4xl mx-auto">
@@ -366,7 +361,6 @@ export default function UnitSelection() {
         </div>
       )}
 
-      <Footer />
     </div>
   );
 }

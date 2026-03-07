@@ -6,8 +6,6 @@ import { uploadVerificationDocument, createVerificationRequest } from '@/app/fea
 import { hasUserAcceptedTerms } from '@/app/features/admin/terms.service';
 import DocumentUpload from './DocumentUpload';
 import { fileToDataURL } from '@/app/shared/utils/imageCompression';
-import Header from '@/app/shared/components/Header';
-import Footer from '@/app/shared/components/Footer';
 
 export default function IdentityVerification() {
   const { state, authState, goToStep } = useBooking();
@@ -128,7 +126,6 @@ export default function IdentityVerification() {
   if (showTermsModal) {
     return (
       <>
-        <Header />
         <div className="min-h-screen bg-slate-900 pt-24 pb-12 px-6 flex items-center justify-center">
           <div className="max-w-md w-full bg-slate-800 rounded-2xl p-8 border border-red-500/30">
             {/* Warning Icon */}
@@ -167,7 +164,6 @@ export default function IdentityVerification() {
             </button>
           </div>
         </div>
-        <Footer />
       </>
     );
   }
@@ -177,7 +173,6 @@ export default function IdentityVerification() {
 
     return (
       <>
-        <Header />
         <div className="min-h-screen bg-slate-900 pt-24 pb-12 px-6 flex flex-col items-center">
           <div className="max-w-md w-full">
             {/* Icon */}
@@ -254,14 +249,12 @@ export default function IdentityVerification() {
             </div>
           </div>
         </div>
-        <Footer />
       </>
     );
   }
 
   return (
     <>
-      <Header />
       <div className="min-h-screen bg-slate-900 pt-24 pb-12 px-6">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center gap-2 text-emerald-400 mb-6">
@@ -339,7 +332,6 @@ export default function IdentityVerification() {
         )}
       </div>
       </div>
-      <Footer />
     </>
   );
 }

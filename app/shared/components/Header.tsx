@@ -4,11 +4,7 @@ import { useState } from 'react';
 import ReactCountryFlag from 'react-country-flag';
 import { useBooking } from '@/app/context';
 
-interface HeaderProps {
-  onCtaClick?: () => void;
-}
-
-export default function Header({ onCtaClick }: HeaderProps) {
+export default function Header() {
   const { authState, logout, goToStep, currency, setCurrency, openAuthModal } = useBooking();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);

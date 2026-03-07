@@ -2,8 +2,6 @@
 
 import { useState } from 'react';
 import { useBooking } from '@/app/context';
-import Header from '@/app/shared/components/Header';
-import Footer from '@/app/shared/components/Footer';
 import PropertyShowcase from '@/app/features/properties/components/PropertyShowcase';
 
 export default function Landing() {
@@ -14,8 +12,6 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-slate-900">
-      <Header onCtaClick={handleCtaClick} />
-
       {/* Hero Section */}
       <section className="overflow-hidden bg-slate-900">
 
@@ -435,7 +431,6 @@ export default function Landing() {
         </div>
       </section>
 
-      <Footer />
     </div>
   );
 }

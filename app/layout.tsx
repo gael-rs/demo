@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Homested - Entra a vivir",
+  title: "Homested | Housing as a Living",
   description: "Un nuevo paradigma habitacional. Sin papeles, sin llaves, sin intermediarios.",
 };
 

@@ -6,6 +6,7 @@ import { AMENITIES } from '../data';
 import { City, Space, Unit } from '../types';
 import { getActiveProperties, Property } from '../services/property.service';
 import Header from './Header';
+import Footer from './Footer';
 import SearchBar from './SearchBar';
 import CityCarousel from './CityCarousel';
 import SpaceDetailsCard from './SpaceDetailsCard';
@@ -17,6 +18,8 @@ export default function UnitSelection() {
   const [selectedSpace, setSelectedSpace] = useState<Space | null>(null);
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [spacesVisible, setSpacesVisible] = useState(false);
 
   // Load properties from database
   useEffect(() => {
@@ -32,6 +35,16 @@ export default function UnitSelection() {
     };
     loadProperties();
   }, []);
+
+  // Animate spaces in when city changes
+  useEffect(() => {
+    if (selectedCity) {
+      setSpacesVisible(false);
+      setSelectedCategory(null);
+      const timer = setTimeout(() => setSpacesVisible(true), 60);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedCity?.id]);
 
   // Generate cities from available properties
   const availableCities = useMemo(() => {
@@ -72,7 +85,7 @@ export default function UnitSelection() {
       .map(property => ({
         id: property.id,
         name: property.name,
-        category: 'PRO', // You can add category field to property table if needed
+        category: property.category || 'PRO',
         city: property.city,
         cityId: selectedCity.id,
         location: property.address,
@@ -87,6 +100,18 @@ export default function UnitSelection() {
         ownerName: 'Homested Chile',
       } as Space));
   }, [selectedCity, properties]);
+
+  // Unique categories in the selected city
+  const availableCategories = useMemo(() => {
+    const cats = new Set(citySpaces.map(s => s.category));
+    return Array.from(cats);
+  }, [citySpaces]);
+
+  // Spaces filtered by selected category
+  const filteredSpaces = useMemo(() => {
+    if (!selectedCategory) return citySpaces;
+    return citySpaces.filter(s => s.category === selectedCategory);
+  }, [citySpaces, selectedCategory]);
 
   const handleSearch = () => {
     // Auto-select if only one result
@@ -182,14 +207,49 @@ export default function UnitSelection() {
       {selectedCity && citySpaces.length > 0 && (
         <div className="py-8 px-6">
           <div className="max-w-6xl mx-auto">
-            <h2 className="text-white text-xl font-semibold mb-6">
-              Espacios en {selectedCity.name}
-            </h2>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {citySpaces.map(space => (
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+              <h2 className="text-white text-xl font-semibold">
+                Espacios en {selectedCity.name}
+              </h2>
+              {/* Category filter tags */}
+              {availableCategories.length > 1 && (
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setSelectedCategory(null)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                      !selectedCategory
+                        ? 'bg-emerald-500 text-white'
+                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    }`}
+                  >
+                    Todos
+                  </button>
+                  {availableCategories.map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                        selectedCategory === cat
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div
+              className={`grid gap-6 md:grid-cols-2 lg:grid-cols-3 transition-all duration-500 ${
+                spacesVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+              }`}
+            >
+              {filteredSpaces.map((space, i) => (
                 <div
                   key={space.id}
                   onClick={() => handleSpaceSelect(space)}
+                  style={{ transitionDelay: `${i * 60}ms` }}
                   className={`
                     bg-slate-800 rounded-xl cursor-pointer p-1
                     transition-all duration-300
@@ -305,6 +365,8 @@ export default function UnitSelection() {
           </div>
         </div>
       )}
+
+      <Footer />
     </div>
   );
 }

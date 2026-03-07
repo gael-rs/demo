@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/app/lib/prisma';
+import { prisma } from '@/app/shared/lib/prisma';
 
 const FACE_MATCH_THRESHOLD = 75;
 

@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getAllBookings, getBookingById, updateBookingStatus } from '@/app/services/booking.service';
-import { getAllAccessCodes } from '@/app/services/accessCode.service';
-import { generateAccessCodeWithLock } from '@/app/services/smartlock.service';
+import { getAllBookings, getBookingById, updateBookingStatus } from '@/app/features/booking/booking.service';
+import { getAllAccessCodes } from '@/app/features/access/accessCode.service';
+import { generateAccessCodeWithLock } from '@/app/features/access/smartlock.service';
 
 export default function AccessCodesPage() {
   const [bookings, setBookings] = useState<any[]>([]);

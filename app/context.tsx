@@ -8,11 +8,11 @@ import {
   registerUser,
   logoutUser,
   checkSession,
-} from './services/auth.service';
-import { createBooking } from './services/booking.service';
-import { calculatePropertyPrice } from './services/pricing.service';
-import { supabase } from './lib/supabase';
-import { hasUserAcceptedTerms, recordTermsAcceptance } from './services/terms.service';
+} from '@/app/features/auth/auth.service';
+import { createBooking } from '@/app/features/booking/booking.service';
+import { calculatePropertyPrice } from '@/app/features/booking/pricing.service';
+import { supabase } from '@/app/shared/lib/supabase';
+import { hasUserAcceptedTerms, recordTermsAcceptance } from '@/app/features/admin/terms.service';
 
 interface BookingContextType {
   // Booking state

@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getAllBookings } from '@/app/services/booking.service';
-import { supabase } from '@/app/lib/supabase';
+import { getAllBookings } from '@/app/features/booking/booking.service';
+import { supabase } from '@/app/shared/lib/supabase';
 
 interface BookingWithPayment {
   id: string;

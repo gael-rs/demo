@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getAllBookings, updateBookingStatus, deleteBooking } from '@/app/services/booking.service';
-import { getAccessCodeForBooking, deleteAccessCodeByBookingId } from '@/app/services/accessCode.service';
-import { deleteVerificationDocuments, deleteVerificationByBookingId } from '@/app/services/verification.service';
+import { getAllBookings, updateBookingStatus, deleteBooking } from '@/app/features/booking/booking.service';
+import { getAccessCodeForBooking, deleteAccessCodeByBookingId } from '@/app/features/access/accessCode.service';
+import { deleteVerificationDocuments, deleteVerificationByBookingId } from '@/app/features/identity/verification.service';
 
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<any[]>([]);

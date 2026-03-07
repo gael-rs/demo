@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useBooking } from '@/app/context';
-import { getUserBookings } from '@/app/services/booking.service';
-import { getAccessCodeForBooking } from '@/app/services/accessCode.service';
-import Header from '@/app/components/Header';
-import Footer from '@/app/components/Footer';
+import { getUserBookings } from '@/app/features/booking/booking.service';
+import { getAccessCodeForBooking } from '@/app/features/access/accessCode.service';
+import Header from '@/app/shared/components/Header';
+import Footer from '@/app/shared/components/Footer';
 import type { Booking } from '@/app/types';
-import type { AccessCode } from '@/app/services/smartlock.service';
+import type { AccessCode } from '@/app/features/access/smartlock.service';
 
 export default function MyBookingsPage() {
   const { authState, goToStep } = useBooking();

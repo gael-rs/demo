@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/app/lib/prisma';
+import { prisma } from '@/app/shared/lib/prisma';
 
 /**
  * GET /api/properties/[id]

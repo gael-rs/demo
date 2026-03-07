@@ -1,17 +1,15 @@
 'use client';
 
 import { useBooking } from './context';
-import {
-  Landing,
-  UnitSelection,
-  DaysSelection,
-  Payment,
-  IdentityVerification,
-  AccessGranted,
-  ExtendStay,
-  Expiration,
-} from './components';
-import { AuthModal } from './components/auth';
+import Landing from '@/app/features/booking/components/Landing';
+import UnitSelection from '@/app/features/booking/components/UnitSelection';
+import DaysSelection from '@/app/features/booking/components/DaysSelection';
+import AccessGranted from '@/app/features/booking/components/AccessGranted';
+import ExtendStay from '@/app/features/booking/components/ExtendStay';
+import Expiration from '@/app/features/booking/components/Expiration';
+import Payment from '@/app/features/payment/components/Payment';
+import IdentityVerification from '@/app/features/identity/components/IdentityVerification';
+import { AuthModal } from '@/app/features/auth/components';
 
 export default function Home() {
   const { state } = useBooking();

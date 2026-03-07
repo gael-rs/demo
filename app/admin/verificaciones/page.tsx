@@ -6,13 +6,13 @@ import {
   getAllVerifications,
   approveVerification,
   rejectVerification,
-} from '@/app/services/verification.service';
+} from '@/app/features/identity/verification.service';
 import {
   updateBookingStatus,
   updateBookingIdentityVerification,
-} from '@/app/services/booking.service';
-import ImageViewer from '@/app/components/admin/ImageViewer';
-import { supabase } from '@/app/lib/supabase';
+} from '@/app/features/booking/booking.service';
+import ImageViewer from '@/app/features/admin/components/ImageViewer';
+import { supabase } from '@/app/shared/lib/supabase';
 
 export default function VerificationsPage() {
   const [verifications, setVerifications] = useState<any[]>([]);

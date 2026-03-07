@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getBookingMetrics, getAllBookings } from '@/app/services/booking.service';
-import { getPendingVerifications } from '@/app/services/verification.service';
-import { getAllUsers } from '@/app/services/user.service';
+import { getBookingMetrics, getAllBookings } from '@/app/features/booking/booking.service';
+import { getPendingVerifications } from '@/app/features/identity/verification.service';
+import { getAllUsers } from '@/app/features/admin/user.service';
 import Link from 'next/link';
 
 export default function AdminDashboard() {

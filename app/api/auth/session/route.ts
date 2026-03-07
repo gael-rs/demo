@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient, createServiceSupabaseClient } from '@/app/lib/supabase-server';
+import { createServerSupabaseClient, createServiceSupabaseClient } from '@/app/shared/lib/supabase-server';
 
 /**
  * GET /api/auth/session

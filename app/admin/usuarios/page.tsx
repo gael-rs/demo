@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getAllUsers, updateUserRole } from '@/app/services/user.service';
-import { getUserBookings } from '@/app/services/booking.service';
+import { getAllUsers, updateUserRole } from '@/app/features/admin/user.service';
+import { getUserBookings } from '@/app/features/booking/booking.service';
 
 interface UserWithStats {
   id: string;

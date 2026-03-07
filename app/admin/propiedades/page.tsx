@@ -9,7 +9,7 @@ import {
   deactivateProperty,
   Property,
   CreatePropertyData,
-} from '@/app/services/property.service';
+} from '@/app/features/properties/property.service';
 import { AMENITIES, CHILE_CITIES, ACCOMMODATION_CATEGORIES } from '@/app/data';
 
 export default function PropertiesPage() {

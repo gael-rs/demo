@@ -69,7 +69,7 @@ export default function Header({ onCtaClick }: HeaderProps) {
 
           <nav className="hidden md:flex items-center gap-8">
             {menuItems.map(item => {
-              if (item.authRequired && !authState.isAuthenticated) return null;
+
               return (
                 <a
                   key={item.href}
@@ -270,7 +270,6 @@ export default function Header({ onCtaClick }: HeaderProps) {
         {/* Nav links */}
         <nav className="flex-1 overflow-y-auto px-3 py-3">
           {menuItems.map(item => {
-            if (item.authRequired && !authState.isAuthenticated) return null;
             return (
               <a
                 key={item.href}

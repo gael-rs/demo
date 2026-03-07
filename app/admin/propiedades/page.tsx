@@ -307,6 +307,15 @@ export default function PropertiesPage() {
                   onChange={(e) => setFormData({ ...formData, base_price_clp: parseInt(e.target.value) || 0 })}
                   className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 />
+                {formData.base_price_clp > 0 && (
+                  <div className="mt-2 px-3 py-2 bg-slate-900/60 rounded-lg text-xs text-slate-400 space-y-0.5">
+                    <p className="text-slate-300 font-medium mb-1">Precios diarios que se mostrarán:</p>
+                    <p>1–7 días: <span className="text-emerald-400 font-semibold">${Math.round(formData.base_price_clp * 0.10).toLocaleString('es-CL')}/día</span></p>
+                    <p>8–15 días: <span className="text-emerald-400">${Math.round(formData.base_price_clp * 0.08).toLocaleString('es-CL')}/día</span></p>
+                    <p>16–30 días: <span className="text-emerald-400">${Math.round(formData.base_price_clp * 0.06).toLocaleString('es-CL')}/día</span></p>
+                    <p>31–60 días: <span className="text-emerald-400">${Math.round(formData.base_price_clp * 0.033).toLocaleString('es-CL')}/día</span></p>
+                  </div>
+                )}
               </div>
 
               <div>

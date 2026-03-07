@@ -11,7 +11,7 @@ import {
   ExtendStay,
   Expiration,
 } from './components';
-import { AuthScreen } from './components/auth';
+import { AuthModal } from './components/auth';
 
 export default function Home() {
   const { state } = useBooking();
@@ -20,8 +20,6 @@ export default function Home() {
     switch (state.step) {
       case 'landing':
         return <Landing />;
-      case 'auth':
-        return <AuthScreen />;
       case 'unit-selection':
         return <UnitSelection />;
       case 'days-selection':
@@ -41,5 +39,10 @@ export default function Home() {
     }
   };
 
-  return <main className="min-h-screen">{renderStep()}</main>;
+  return (
+    <main className="min-h-screen">
+      {renderStep()}
+      <AuthModal />
+    </main>
+  );
 }

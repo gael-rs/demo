@@ -71,7 +71,7 @@ export default function MyBookingsPage() {
   return (
     <>
       <Header onCtaClick={() => goToStep('unit-selection')} />
-      <div className="min-h-screen bg-slate-900 pt-24 pb-12 px-6">
+      <div className="min-h-screen bg-slate-900 pt-32 pb-12 px-6">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold text-white mb-8">Mis Reservas</h1>
 
@@ -98,7 +98,11 @@ export default function MyBookingsPage() {
 function EmptyState({ onExplore }: { onExplore: () => void }) {
   return (
     <div className="bg-slate-800 rounded-xl p-12 text-center">
-      <div className="text-6xl mb-4">🏠</div>
+      <div className="w-16 h-16 mx-auto mb-4 text-slate-500">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+      </div>
       <h2 className="text-2xl font-bold text-white mb-3">
         No tienes reservas aún
       </h2>
@@ -195,8 +199,11 @@ function BookingCard({ booking, accessCode }: BookingCardProps) {
           {/* Access code */}
           {accessCode && (
             <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4 text-center">
-              <h4 className="text-emerald-400 font-semibold mb-2">
-                🔑 Código de Acceso
+              <h4 className="text-emerald-400 font-semibold mb-2 flex items-center justify-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+                Código de Acceso
               </h4>
               <p className="text-4xl font-mono font-bold text-white tracking-widest mb-2">
                 {accessCode.code}
@@ -206,8 +213,11 @@ function BookingCard({ booking, accessCode }: BookingCardProps) {
                 {formatDate(accessCode.valid_until)}
               </p>
               {accessCode.lock_sync_status === 'simulated' && (
-                <p className="text-yellow-400 text-xs mt-2">
-                  ⚠️ Código simulado - contacta recepción para activar
+                <p className="text-yellow-400 text-xs mt-2 flex items-center justify-center gap-1">
+                  <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  Código simulado - contacta recepción para activar
                 </p>
               )}
             </div>
@@ -216,20 +226,28 @@ function BookingCard({ booking, accessCode }: BookingCardProps) {
           {/* Pending status */}
           {booking.status === 'pending' && (
             <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
-              <p className="text-yellow-400 text-sm">
-                <strong>⏳ Verificación en proceso</strong>
-                <br />
-                Tu identidad está siendo revisada. Recibirás tu código una vez aprobada.
-              </p>
+              <div className="flex items-start gap-2 text-yellow-400 text-sm">
+                <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <strong>Verificación en proceso</strong>
+                  <br />
+                  Tu identidad está siendo revisada. Recibirás tu código una vez aprobada.
+                </div>
+              </div>
             </div>
           )}
 
           {/* Cancelled status */}
           {booking.status === 'cancelled' && (
             <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-              <p className="text-red-400 text-sm">
-                <strong>❌ Reserva Cancelada</strong>
-              </p>
+              <div className="flex items-center gap-2 text-red-400 text-sm">
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <strong>Reserva Cancelada</strong>
+              </div>
             </div>
           )}
         </div>

@@ -9,21 +9,21 @@ interface HeaderProps {
 }
 
 export default function Header({ onCtaClick }: HeaderProps) {
-  const { authState, logout, goToStep, currency, setCurrency } = useBooking();
+  const { authState, logout, goToStep, currency, setCurrency, openAuthModal } = useBooking();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isCurrencyMenuOpen, setIsCurrencyMenuOpen] = useState(false);
 
   const menuItems = [
-    { label: '¿Cómo funciona?', href: '#como-funciona' },
-    { label: '¿Beneficios?', href: '#beneficios' },
-    { label: '¿Precios?', href: '#precios' },
-    { label: 'FAQ', href: '#faq' },
+    { label: '¿Cómo funciona?', href: '/#como-funciona' },
+    { label: '¿Beneficios?', href: '/#beneficios' },
+    { label: '¿Precios?', href: '/#precios' },
+    { label: 'FAQ', href: '/#faq' },
   ];
 
   const handleLoginClick = () => {
     setIsMenuOpen(false);
-    goToStep('auth');
+    openAuthModal();
   };
 
   const handleLogout = () => {
@@ -190,7 +190,7 @@ export default function Header({ onCtaClick }: HeaderProps) {
             ) : (
               <button
                 onClick={handleLoginClick}
-                className="hidden sm:flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white transition-colors text-sm"
+                className="hidden sm:flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold rounded-lg transition-colors text-sm"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />

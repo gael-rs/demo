@@ -148,7 +148,7 @@ export default function UnitSelection() {
       <Header />
 
       {/* Search Section */}
-      <div className="pt-24 pb-8 px-6">
+      <div className="pt-32 pb-8 px-6">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold text-white mb-2">
             Encuentra tu espacio ideal

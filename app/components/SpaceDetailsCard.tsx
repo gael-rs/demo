@@ -12,7 +12,15 @@ interface SpaceDetailsCardProps {
 }
 
 export default function SpaceDetailsCard({ space, onReserve }: SpaceDetailsCardProps) {
-  const { currency, convertPrice } = useBooking();
+  const { currency, convertPrice, authState, openAuthModal } = useBooking();
+
+  const handleReserve = () => {
+    if (!authState.isAuthenticated) {
+      openAuthModal(() => onReserve(space));
+    } else {
+      onReserve(space);
+    }
+  };
   const displayPrice = convertPrice(space.dailyRate);
   return (
     <div className="bg-slate-800 rounded-2xl overflow-hidden shadow-2xl">
@@ -63,12 +71,29 @@ export default function SpaceDetailsCard({ space, onReserve }: SpaceDetailsCardP
           </p>
         </div>
 
+        {/* Check-in / Check-out times */}
+        <div className="flex items-center gap-4 mb-4 px-4 py-3 bg-slate-700/40 rounded-xl text-sm text-slate-400">
+          <div className="flex items-center gap-1.5">
+            <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Check-in <strong className="text-slate-300">3:00 PM</strong></span>
+          </div>
+          <div className="w-px h-4 bg-slate-600" />
+          <div className="flex items-center gap-1.5">
+            <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Check-out <strong className="text-slate-300">12:00 PM</strong></span>
+          </div>
+        </div>
+
         {/* WhatsApp Button */}
         <WhatsAppButton phoneNumber={space.whatsappNumber} spaceName={space.name} />
 
         {/* Reserve Button */}
         <button
-          onClick={() => onReserve(space)}
+          onClick={handleReserve}
           className="w-full py-4 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold text-lg uppercase tracking-widest rounded-lg transition-all active:scale-[0.98] shadow-lg hover:shadow-xl"
         >
           RESERVAR

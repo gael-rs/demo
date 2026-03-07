@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { BookingState, BookingStep, Unit, AuthState, LoginPayload, RegisterPayload } from './types';
 import { calculatePrice, generateAccessCode } from './data';
 import {
@@ -35,6 +35,9 @@ interface BookingContextType {
   login: (payload: LoginPayload) => Promise<boolean>;
   register: (payload: RegisterPayload) => Promise<boolean>;
   logout: () => void;
+  authModalOpen: boolean;
+  openAuthModal: (onSuccess?: () => void) => void;
+  closeAuthModal: () => void;
 
   // Currency state
   currency: 'CLP' | 'USD';
@@ -77,6 +80,8 @@ export function BookingProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<BookingState>(initialBookingState);
   const [authState, setAuthState] = useState<AuthState>(initialAuthState);
   const [currency, setCurrencyState] = useState<'CLP' | 'USD'>('CLP');
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const afterAuthCallbackRef = useRef<(() => void) | null>(null);
 
   // Tasa de cambio aproximada: 1 USD = 950 CLP
   const USD_TO_CLP_RATE = 950;
@@ -452,6 +457,16 @@ export function BookingProvider({ children }: { children: ReactNode }) {
   // AUTH FUNCTIONS
   // ============================================
 
+  const openAuthModal = useCallback((onSuccess?: () => void) => {
+    afterAuthCallbackRef.current = onSuccess || null;
+    setAuthModalOpen(true);
+  }, []);
+
+  const closeAuthModal = useCallback(() => {
+    setAuthModalOpen(false);
+    afterAuthCallbackRef.current = null;
+  }, []);
+
   const login = useCallback(async (payload: LoginPayload): Promise<boolean> => {
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
@@ -466,8 +481,11 @@ export function BookingProvider({ children }: { children: ReactNode }) {
           loading: false,
           error: null,
         });
-        // Volver al landing después de login exitoso
-        setState(prev => ({ ...prev, step: 'landing' }));
+        setAuthModalOpen(false);
+        if (afterAuthCallbackRef.current) {
+          afterAuthCallbackRef.current();
+          afterAuthCallbackRef.current = null;
+        }
         return true;
       } else {
         setAuthState(prev => ({
@@ -510,8 +528,11 @@ export function BookingProvider({ children }: { children: ReactNode }) {
           console.error('Error recording terms acceptance on registration:', error);
         }
 
-        // Volver al landing después de registro exitoso
-        setState(prev => ({ ...prev, step: 'landing' }));
+        setAuthModalOpen(false);
+        if (afterAuthCallbackRef.current) {
+          afterAuthCallbackRef.current();
+          afterAuthCallbackRef.current = null;
+        }
         return true;
       } else {
         setAuthState(prev => ({
@@ -583,6 +604,9 @@ export function BookingProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
+        authModalOpen,
+        openAuthModal,
+        closeAuthModal,
         // Currency
         currency,
         setCurrency,

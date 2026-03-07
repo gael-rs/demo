@@ -107,19 +107,23 @@ export default function PropertyShowcase() {
   }
 
   const currentProperty = properties[currentIndex];
-  const displayPrice = convertPrice(currentProperty.base_price_clp);
+  const regularPriceClp = Math.round(currentProperty.base_price_clp * 0.10);
+  const longStayPriceClp = Math.round(currentProperty.base_price_clp * 0.033);
+  const displayRegularPrice = convertPrice(regularPriceClp);
+  const displayLongStayPrice = convertPrice(longStayPriceClp);
 
   return (
     <div className="max-w-7xl mx-auto">
       {/* Section Header */}
       <div className="text-center mb-12">
-        <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-          {properties.length === 1 ? 'Nuestro Inmueble Disponible' : 'Nuestros Inmuebles Destacados'}
+        <p className="text-emerald-500 text-xs font-semibold tracking-widest uppercase mb-3">Inmuebles disponibles</p>
+        <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">
+          {properties.length === 1 ? 'Nuestro Inmueble Disponible' : 'Opciones Destacadas'}
         </h2>
-        <p className="text-slate-400 text-lg">
+        <p className="text-slate-400 text-base">
           {properties.length === 1
             ? 'Departamento moderno listo para ti'
-            : `${properties.length} propiedades disponibles en diferentes ciudades`}
+            : 'Encuentra el hogar para esta etapa de tu vida.'}
         </p>
       </div>
 
@@ -171,6 +175,13 @@ export default function PropertyShowcase() {
                 {currentProperty.city}
               </div>
 
+              {/* Category Badge */}
+              {currentProperty.category && (
+                <div className="absolute top-4 right-4 px-3 py-1 bg-black/40 backdrop-blur-sm border border-white/20 text-white text-xs font-bold rounded-full uppercase tracking-widest shadow-lg">
+                  {currentProperty.category}
+                </div>
+              )}
+
               {/* Gradient Overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent opacity-90" />
 
@@ -192,13 +203,37 @@ export default function PropertyShowcase() {
 
             {/* Card Content */}
             <div className="p-6">
-              {/* Price - Moved here */}
+              {/* Price */}
               <div className="mb-4 pb-4 border-b border-slate-700/50">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-emerald-400 font-bold text-3xl">
-                    {currency === 'USD' ? '$' : '$'}{displayPrice.toLocaleString(currency === 'USD' ? 'en-US' : 'es-CL')}
-                  </span>
-                  <span className="text-slate-400 text-sm">{currency}/día</span>
+                <div className="flex items-stretch gap-3">
+                  {/* Regular price */}
+                  <div className="flex-1 px-3 py-2.5 rounded-xl bg-slate-700/40">
+                    <p className="text-slate-500 text-xs mb-1">1–7 días</p>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-slate-300 font-semibold text-lg">
+                        ${displayRegularPrice.toLocaleString(currency === 'USD' ? 'en-US' : 'es-CL')}
+                      </span>
+                      <span className="text-slate-500 text-xs">{currency}/día</span>
+                    </div>
+                  </div>
+
+                  {/* Arrow */}
+                  <div className="flex items-center text-slate-600">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </div>
+
+                  {/* Long-stay price */}
+                  <div className="flex-1 px-3 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                    <p className="text-emerald-500 text-xs mb-1">31–60 días</p>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-emerald-400 font-bold text-2xl">
+                        ${displayLongStayPrice.toLocaleString(currency === 'USD' ? 'en-US' : 'es-CL')}
+                      </span>
+                      <span className="text-slate-400 text-xs">{currency}/día</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -212,19 +247,17 @@ export default function PropertyShowcase() {
               )}
 
               {/* Stats */}
-              <div className="flex items-center justify-between pb-6 border-b border-slate-700/50 mb-6">
-                <div className="text-center">
-                  <div className="text-emerald-400 font-bold text-xl">{currentProperty.capacity}</div>
+              <div className="grid grid-cols-3 pb-6 border-b border-slate-700/50 mb-6">
+                <div className="flex flex-col items-center gap-1 py-2">
+                  <div className="text-emerald-400 font-bold text-2xl leading-none">{currentProperty.capacity}</div>
                   <div className="text-slate-500 text-xs">Personas</div>
                 </div>
-                <div className="w-px h-10 bg-slate-700" />
-                <div className="text-center">
-                  <div className="text-emerald-400 font-bold text-xl">{currentProperty.bedrooms}</div>
+                <div className="flex flex-col items-center gap-1 py-2 border-x border-slate-700">
+                  <div className="text-emerald-400 font-bold text-2xl leading-none">{currentProperty.bedrooms}</div>
                   <div className="text-slate-500 text-xs">Dormitorios</div>
                 </div>
-                <div className="w-px h-10 bg-slate-700" />
-                <div className="text-center">
-                  <div className="text-emerald-400 font-bold text-xl">{currentProperty.bathrooms}</div>
+                <div className="flex flex-col items-center gap-1 py-2">
+                  <div className="text-emerald-400 font-bold text-2xl leading-none">{currentProperty.bathrooms}</div>
                   <div className="text-slate-500 text-xs">Baños</div>
                 </div>
               </div>

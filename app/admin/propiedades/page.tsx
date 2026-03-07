@@ -10,7 +10,7 @@ import {
   Property,
   CreatePropertyData,
 } from '@/app/services/property.service';
-import { AMENITIES, CHILE_CITIES } from '@/app/data';
+import { AMENITIES, CHILE_CITIES, ACCOMMODATION_CATEGORIES } from '@/app/data';
 
 export default function PropertiesPage() {
   const [properties, setProperties] = useState<Property[]>([]);
@@ -33,6 +33,7 @@ export default function PropertiesPage() {
     lock_provider: 'simulated',
     lock_device_id: '',
     lock_enabled: false,
+    category: '',
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -90,6 +91,7 @@ export default function PropertiesPage() {
       lock_provider: property.lock_provider || 'simulated',
       lock_device_id: property.lock_device_id || '',
       lock_enabled: property.lock_enabled ?? false,
+      category: property.category || '',
     });
     setShowForm(true);
   };
@@ -124,6 +126,7 @@ export default function PropertiesPage() {
       lock_provider: 'simulated',
       lock_device_id: '',
       lock_enabled: false,
+      category: '',
     });
     setEditingProperty(null);
     setShowForm(false);
@@ -255,6 +258,24 @@ export default function PropertiesPage() {
                   placeholder="Ej: Metropolitana"
                 />
               </div>
+
+              <div>
+                <label className="block text-slate-300 text-sm font-medium mb-2">
+                  Categoría
+                </label>
+                <select
+                  value={formData.category || ''}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value || null })}
+                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                >
+                  <option value="">Sin categoría</option>
+                  {ACCOMMODATION_CATEGORIES.map((cat) => (
+                    <option key={cat.id} value={cat.name.toUpperCase()}>
+                      {cat.name.toUpperCase()} — {cat.tagline}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* Description */}
@@ -275,7 +296,7 @@ export default function PropertiesPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <label className="block text-slate-300 text-sm font-medium mb-2">
-                  Precio Base (CLP/día) *
+                  Precio Mensual Base (CLP) *
                 </label>
                 <input
                   type="number"
@@ -283,7 +304,7 @@ export default function PropertiesPage() {
                   min="1000"
                   step="1000"
                   value={formData.base_price_clp}
-                  onChange={(e) => setFormData({ ...formData, base_price_clp: parseInt(e.target.value) })}
+                  onChange={(e) => setFormData({ ...formData, base_price_clp: parseInt(e.target.value) || 0 })}
                   className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 />
               </div>
@@ -559,8 +580,13 @@ export default function PropertiesPage() {
                         {property.bathrooms} baños
                       </div>
                       <div className="flex items-center gap-2 text-emerald-400 text-sm font-semibold">
-                        ${property.base_price_clp.toLocaleString('es-CL')} CLP/día
+                        ${property.base_price_clp.toLocaleString('es-CL')} CLP/mes base
                       </div>
+                      {property.category && (
+                        <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded-full border border-emerald-500/30">
+                          {property.category}
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2">

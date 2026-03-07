@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import ReactCountryFlag from 'react-country-flag';
 import { useBooking } from '../context';
 
 interface HeaderProps {
@@ -14,10 +15,9 @@ export default function Header({ onCtaClick }: HeaderProps) {
   const [isCurrencyMenuOpen, setIsCurrencyMenuOpen] = useState(false);
 
   const menuItems = [
-    { label: 'Mis Reservas', href: '/mis-reservas', authRequired: true },
-    { label: 'Cómo funciona', href: '#como-funciona' },
-    { label: 'Beneficios', href: '#beneficios' },
-    { label: 'Precios', href: '#precios' },
+    { label: '¿Cómo funciona?', href: '#como-funciona' },
+    { label: '¿Beneficios?', href: '#beneficios' },
+    { label: '¿Precios?', href: '#precios' },
     { label: 'FAQ', href: '#faq' },
   ];
 
@@ -48,23 +48,24 @@ export default function Header({ onCtaClick }: HeaderProps) {
     setIsCurrencyMenuOpen(false);
   };
 
-  const currencyFlags = {
-    CLP: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Flag_of_Chile.svg/32px-Flag_of_Chile.svg.png',
-    USD: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Flag_of_the_United_States.svg/32px-Flag_of_the_United_States.svg.png',
+  const currencyCountry = {
+    CLP: 'CL',
+    USD: 'US',
   };
 
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-sm border-b border-slate-800">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center">
+          <button onClick={handleLogoClick} className="flex items-center hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-md" aria-label="Ir al inicio">
             <img
               src="/logo-moon.png"
               alt="Homested"
-              className="h-10 w-auto object-contain cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={handleLogoClick}
+              width={120}
+              height={56}
+              className="h-14 w-auto object-contain"
             />
-          </div>
+          </button>
 
           <nav className="hidden md:flex items-center gap-8">
             {menuItems.map(item => {
@@ -86,13 +87,10 @@ export default function Header({ onCtaClick }: HeaderProps) {
             <div className="relative hidden sm:block">
               <button
                 onClick={() => setIsCurrencyMenuOpen(!isCurrencyMenuOpen)}
+                aria-label={`Moneda actual: ${currency}`}
                 className="flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
               >
-                <img
-                  src={currencyFlags[currency]}
-                  alt={currency}
-                  className="w-5 h-4 object-cover rounded-sm"
-                />
+                <ReactCountryFlag countryCode={currencyCountry[currency]} svg style={{ width: '1.25rem', height: '1rem' }} aria-hidden="true" />
                 <span className="text-white text-sm font-medium">{currency}</span>
                 <svg
                   className={`w-4 h-4 text-slate-400 transition-transform ${isCurrencyMenuOpen ? 'rotate-180' : ''}`}
@@ -112,11 +110,7 @@ export default function Header({ onCtaClick }: HeaderProps) {
                       currency === 'CLP' ? 'bg-slate-700' : ''
                     }`}
                   >
-                    <img
-                      src={currencyFlags.CLP}
-                      alt="CLP"
-                      className="w-5 h-4 object-cover rounded-sm"
-                    />
+                    <ReactCountryFlag countryCode="CL" svg style={{ width: '1.25rem', height: '1rem' }} aria-hidden="true" />
                     <span className="text-white text-sm">CLP</span>
                     {currency === 'CLP' && (
                       <svg className="w-4 h-4 text-emerald-400 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -130,11 +124,7 @@ export default function Header({ onCtaClick }: HeaderProps) {
                       currency === 'USD' ? 'bg-slate-700' : ''
                     }`}
                   >
-                    <img
-                      src={currencyFlags.USD}
-                      alt="USD"
-                      className="w-5 h-4 object-cover rounded-sm"
-                    />
+                    <ReactCountryFlag countryCode="US" svg style={{ width: '1.25rem', height: '1rem' }} aria-hidden="true" />
                     <span className="text-white text-sm">USD</span>
                     {currency === 'USD' && (
                       <svg className="w-4 h-4 text-emerald-400 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -153,6 +143,7 @@ export default function Header({ onCtaClick }: HeaderProps) {
               <div className="relative hidden sm:block">
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  aria-label="Menú de usuario"
                   className="flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
                 >
                   <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
@@ -208,14 +199,6 @@ export default function Header({ onCtaClick }: HeaderProps) {
               </button>
             )}
 
-            {/* CTA Button - Desktop */}
-            <button
-              onClick={onCtaClick}
-              className="hidden sm:block px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-medium rounded-lg transition-colors"
-            >
-              Entrar a vivir
-            </button>
-
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -235,108 +218,122 @@ export default function Header({ onCtaClick }: HeaderProps) {
           </div>
         </div>
 
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden bg-slate-800 border-t border-slate-700">
-            <nav className="flex flex-col px-6 py-4">
-              {/* User Info (Mobile) */}
-              {!authState.loading && authState.isAuthenticated && authState.user && (
-                <div className="flex items-center gap-3 pb-4 mb-4 border-b border-slate-700">
-                  <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-medium">
-                      {authState.user.name.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-white font-medium">{authState.user.name}</p>
-                    <p className="text-slate-400 text-sm">{authState.user.email}</p>
-                  </div>
-                </div>
-              )}
+      </header>
 
-              {menuItems.map(item => {
-                if (item.authRequired && !authState.isAuthenticated) return null;
-                return (
-                  <a
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setIsMenuOpen(false)}
-                    className="py-3 text-slate-300 hover:text-white transition-colors border-b border-slate-700"
-                  >
-                    {item.label}
-                  </a>
-                );
-              })}
+      {/* ── Mobile Drawer ── */}
+      {/* Backdrop */}
+      <div
+        className={`fixed inset-0 z-40 md:hidden bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${
+          isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={() => setIsMenuOpen(false)}
+        aria-hidden="true"
+      />
+      {/* Drawer panel */}
+      <div
+        className={`fixed top-0 right-0 bottom-0 z-50 md:hidden w-72 bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col transition-transform duration-300 ease-in-out ${
+          isMenuOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menú de navegación"
+      >
+        {/* Drawer header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
+          <span className="text-white font-semibold text-base">Menú</span>
+          <button
+            onClick={() => setIsMenuOpen(false)}
+            aria-label="Cerrar menú"
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
-              {/* Currency Selector (Mobile) */}
-              <div className="py-3 border-b border-slate-700">
-                <p className="text-slate-400 text-sm mb-2 uppercase">Moneda</p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleCurrencyChange('CLP')}
-                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                      currency === 'CLP'
-                        ? 'bg-emerald-500 text-white'
-                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                    }`}
-                  >
-                    <img
-                      src={currencyFlags.CLP}
-                      alt="CLP"
-                      className="w-5 h-4 object-cover rounded-sm"
-                    />
-                    <span className="text-sm font-medium">CLP</span>
-                  </button>
-                  <button
-                    onClick={() => handleCurrencyChange('USD')}
-                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                      currency === 'USD'
-                        ? 'bg-emerald-500 text-white'
-                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                    }`}
-                  >
-                    <img
-                      src={currencyFlags.USD}
-                      alt="USD"
-                      className="w-5 h-4 object-cover rounded-sm"
-                    />
-                    <span className="text-sm font-medium">USD</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Auth & CTA Buttons (Mobile) */}
-              {authState.loading ? (
-                <div className="mt-4 w-full h-12 bg-slate-700 rounded-lg animate-pulse" />
-              ) : authState.isAuthenticated ? (
-                <button
-                  onClick={handleLogout}
-                  className="mt-4 w-full py-3 bg-red-600 hover:bg-red-500 text-white font-medium rounded-lg transition-colors"
-                >
-                  Cerrar sesión
-                </button>
-              ) : (
-                <button
-                  onClick={handleLoginClick}
-                  className="mt-4 w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg transition-colors"
-                >
-                  Iniciar sesión
-                </button>
-              )}
-
-              <button
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  onCtaClick?.();
-                }}
-                className="mt-3 w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-medium rounded-lg transition-colors"
-              >
-                Entrar a vivir
-              </button>
-            </nav>
+        {/* User info */}
+        {!authState.loading && authState.isAuthenticated && authState.user && (
+          <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-800 bg-slate-800/40">
+            <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <span className="text-white font-semibold text-sm">
+                {authState.user.name.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div className="min-w-0">
+              <p className="text-white font-medium text-sm truncate">{authState.user.name}</p>
+              <p className="text-slate-400 text-xs truncate">{authState.user.email}</p>
+            </div>
           </div>
         )}
-      </header>
+
+        {/* Nav links */}
+        <nav className="flex-1 overflow-y-auto px-3 py-3">
+          {menuItems.map(item => {
+            if (item.authRequired && !authState.isAuthenticated) return null;
+            return (
+              <a
+                key={item.href}
+                href={item.href}
+                onClick={() => setIsMenuOpen(false)}
+                className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors text-sm font-medium"
+              >
+                {item.label}
+              </a>
+            );
+          })}
+        </nav>
+
+        {/* Currency + Auth — bottom */}
+        <div className="px-4 py-4 border-t border-slate-800 space-y-3">
+          {/* Currency */}
+          <div>
+            <p className="text-slate-500 text-xs uppercase tracking-widest mb-2 px-1">Moneda</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleCurrencyChange('CLP')}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                  currency === 'CLP' ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                }`}
+              >
+                <ReactCountryFlag countryCode="CL" svg style={{ width: '1.25rem', height: '1rem' }} aria-hidden="true" />
+                CLP
+              </button>
+              <button
+                onClick={() => handleCurrencyChange('USD')}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                  currency === 'USD' ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                }`}
+              >
+                <ReactCountryFlag countryCode="US" svg style={{ width: '1.25rem', height: '1rem' }} aria-hidden="true" />
+                USD
+              </button>
+            </div>
+          </div>
+
+          {/* Auth */}
+          {authState.loading ? (
+            <div className="w-full h-11 bg-slate-800 rounded-xl animate-pulse" />
+          ) : authState.isAuthenticated ? (
+            <button
+              onClick={handleLogout}
+              className="w-full py-3 bg-slate-800 hover:bg-red-500/20 text-red-400 hover:text-red-300 font-medium rounded-xl transition-colors text-sm flex items-center justify-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              Cerrar sesión
+            </button>
+          ) : (
+            <button
+              onClick={handleLoginClick}
+              className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold rounded-xl transition-colors text-sm"
+            >
+              Iniciar sesión
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Overlay to close user menu */}
       {isUserMenuOpen && (

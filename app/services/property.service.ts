@@ -17,6 +17,7 @@ export interface Property {
   lock_provider?: string | null;
   lock_device_id?: string | null;
   lock_enabled?: boolean;
+  category?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -37,6 +38,7 @@ export interface CreatePropertyData {
   lock_provider?: string | null;
   lock_device_id?: string | null;
   lock_enabled?: boolean;
+  category?: string | null;
 }
 
 /**

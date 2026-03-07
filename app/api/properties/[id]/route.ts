@@ -28,6 +28,7 @@ export async function GET(
         bedrooms: true,
         bathrooms: true,
         is_active: true,
+        category: true,
         created_at: true,
         updated_at: true,
       },

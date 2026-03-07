@@ -59,6 +59,7 @@ model properties {
   lock_provider  String?
   lock_device_id String?
   lock_enabled   Boolean?         @default(false)
+  category       String?
   access_codes   access_codes[]
   bookings       bookings[]
   discount_rules discount_rules[]

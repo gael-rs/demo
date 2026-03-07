@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
         bedrooms: true,
         bathrooms: true,
         is_active: true,
+        category: true,
         created_at: true,
         updated_at: true,
       },

@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
         booking_id: bookingId,
         user_id: (paymentData.metadata as Record<string, unknown> | null)?.user_id ?? null,
         mp_payment_id: String(paymentId),
-        mp_preference_id: paymentData.order?.id ? String(paymentData.order.id) : null,
+        mp_preference_id: (paymentData as unknown as { preference_id?: string }).preference_id ?? null,
         status: mpStatus,
         amount_clp: paymentData.transaction_amount ?? 0,
         payment_method: paymentData.payment_type_id ?? null,

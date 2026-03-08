@@ -73,6 +73,7 @@ export default function Payment() {
           checkIn: checkIn.toISOString().split('T')[0],
           checkOut: checkOut.toISOString().split('T')[0],
           userEmail: authState.user.email,
+          userName: authState.user.name,
         }),
       });
 

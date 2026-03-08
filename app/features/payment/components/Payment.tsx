@@ -79,8 +79,8 @@ export default function Payment() {
 
       if (!response.ok) throw new Error('Error al conectar con MercadoPago');
 
-      const { initPoint, sandboxInitPoint } = await response.json();
-      const checkoutUrl = sandboxInitPoint || initPoint;
+      const { initPoint } = await response.json();
+      const checkoutUrl = initPoint;
       if (!checkoutUrl) throw new Error('No se recibió URL de checkout de MercadoPago');
       window.location.href = checkoutUrl;
 

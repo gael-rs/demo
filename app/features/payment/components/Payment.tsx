@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useBooking } from '@/app/context';
+import { recordTermsAcceptance } from '@/app/features/admin/terms.service';
 
 const MONTHS_ES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
@@ -11,7 +12,7 @@ function formatDate(d: Date) {
 }
 
 export default function Payment() {
-  const { state, goToStep, currency, convertPrice, authState, setTermsAccepted, createBookingForPayment } = useBooking();
+  const { state, goToStep, currency, convertPrice, authState, setTermsAccepted } = useBooking();
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,19 +31,21 @@ export default function Payment() {
       setError('Debes aceptar los términos y condiciones para continuar');
       return;
     }
-    if (!authState.user) { goToStep('auth'); return; }
+    if (!authState.user || !state.selectedUnit) { goToStep('auth'); return; }
 
     setIsRedirecting(true);
     setError(null);
 
     try {
-      const bookingId = await createBookingForPayment();
-      if (!bookingId) throw new Error('No se pudo crear la reserva');
+      // Registrar aceptación de términos antes de redirigir (sin bookingId aún)
+      await recordTermsAcceptance(authState.user.id).catch(() => {});
 
+      const sessionId = crypto.randomUUID();
+
+      // Guardar estado en sessionStorage para restaurar al volver de MP
       sessionStorage.setItem('mp_pending_payment', JSON.stringify({
-        bookingId,
-        unitId: state.selectedUnit?.id,
-        unitName: state.selectedUnit?.name,
+        unitId: state.selectedUnit.id,
+        unitName: state.selectedUnit.name,
         days: state.days,
         totalPrice: state.totalPrice,
         pricePerDay: state.pricePerDay,
@@ -57,12 +60,18 @@ export default function Payment() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          bookingId,
-          unitName: state.selectedUnit?.name,
+          sessionId,
+          userId: authState.user.id,
+          propertyId: state.selectedUnit.id,
+          unitName: state.selectedUnit.name,
           days: state.days,
+          pricePerDay: state.pricePerDay,
           totalPriceCLP: state.totalPrice,
-          checkIn: checkIn.toLocaleDateString('es-CL'),
-          checkOut: checkOut.toLocaleDateString('es-CL'),
+          basePriceCLP: state.basePricePerDay || state.pricePerDay,
+          discountPercentage: state.discountPercentage || 0,
+          discountAmountCLP: state.discountAmount || 0,
+          checkIn: checkIn.toISOString().split('T')[0],
+          checkOut: checkOut.toISOString().split('T')[0],
           userEmail: authState.user.email,
         }),
       });

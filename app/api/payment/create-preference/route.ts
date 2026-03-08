@@ -9,16 +9,22 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
-      bookingId,
+      sessionId,
+      userId,
+      propertyId,
       unitName,
       days,
+      pricePerDay,
       totalPriceCLP,
+      basePriceCLP,
+      discountPercentage,
+      discountAmountCLP,
       checkIn,
       checkOut,
       userEmail,
     } = body;
 
-    if (!bookingId || !totalPriceCLP || !userEmail) {
+    if (!sessionId || !userId || !propertyId || !totalPriceCLP || !userEmail) {
       return NextResponse.json(
         { error: 'Faltan parámetros requeridos' },
         { status: 400 }
@@ -33,7 +39,7 @@ export async function POST(request: NextRequest) {
       body: {
         items: [
           {
-            id: bookingId,
+            id: sessionId,
             title: `Reserva Homested - ${unitName}`,
             description: `${days} día${days !== 1 ? 's' : ''} (${checkIn} → ${checkOut})`,
             quantity: 1,
@@ -44,7 +50,8 @@ export async function POST(request: NextRequest) {
         payer: {
           email: userEmail,
         },
-        external_reference: bookingId,
+        // sessionId como external_reference — la reserva se crea DESPUÉS del pago
+        external_reference: sessionId,
         back_urls: {
           success: `${baseUrl}/payment/success`,
           failure: `${baseUrl}/payment/failure`,
@@ -53,8 +60,19 @@ export async function POST(request: NextRequest) {
         auto_return: 'approved',
         notification_url: `${baseUrl}/api/payment/webhook`,
         statement_descriptor: 'Homested',
+        // Todos los datos necesarios para crear la reserva en el webhook
         metadata: {
-          booking_id: bookingId,
+          session_id: sessionId,
+          user_id: userId,
+          property_id: propertyId,
+          check_in: checkIn,
+          check_out: checkOut,
+          days,
+          price_per_day_clp: pricePerDay,
+          total_price_clp: totalPriceCLP,
+          base_price_clp: basePriceCLP,
+          discount_percentage: discountPercentage,
+          discount_amount_clp: discountAmountCLP,
         },
       },
     });

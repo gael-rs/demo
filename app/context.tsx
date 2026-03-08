@@ -303,27 +303,33 @@ export function BookingProvider({ children }: { children: ReactNode }) {
       const result = JSON.parse(resultRaw);
       const { success, bookingId, bookingState } = result;
 
+      const restoredBookingFields = bookingState ? {
+        selectedUnit: bookingState.selectedUnit ?? null,
+        days: bookingState.days,
+        totalPrice: bookingState.totalPrice,
+        pricePerDay: bookingState.pricePerDay,
+        basePricePerDay: bookingState.basePricePerDay,
+        discountPercentage: bookingState.discountPercentage,
+        discountAmount: bookingState.discountAmount,
+        checkInDate: bookingState.checkIn ? new Date(bookingState.checkIn) : null,
+        checkOutDate: bookingState.checkOut ? new Date(bookingState.checkOut) : null,
+      } : {};
+
       if (success && bookingState) {
         // Restaurar estado de la reserva y avanzar a verificación de identidad
         setState(prev => ({
           ...prev,
+          ...restoredBookingFields,
           bookingId: bookingId || bookingState.bookingId,
-          days: bookingState.days,
-          totalPrice: bookingState.totalPrice,
-          pricePerDay: bookingState.pricePerDay,
-          basePricePerDay: bookingState.basePricePerDay,
-          discountPercentage: bookingState.discountPercentage,
-          discountAmount: bookingState.discountAmount,
-          checkInDate: bookingState.checkIn ? new Date(bookingState.checkIn) : null,
-          checkOutDate: bookingState.checkOut ? new Date(bookingState.checkOut) : null,
           paymentStatus: 'success',
           termsAccepted: true,
           step: 'identity-verification',
         }));
       } else if (!result.pending) {
-        // Pago fallido — volver al paso de pago
+        // Pago fallido — volver al paso de pago con todos los datos restaurados
         setState(prev => ({
           ...prev,
+          ...restoredBookingFields,
           paymentStatus: 'failed',
           step: 'payment',
         }));

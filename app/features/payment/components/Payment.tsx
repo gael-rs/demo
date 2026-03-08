@@ -42,10 +42,9 @@ export default function Payment() {
 
       const sessionId = crypto.randomUUID();
 
-      // Guardar estado en sessionStorage para restaurar al volver de MP
+      // Guardar estado completo en sessionStorage para restaurar al volver de MP
       sessionStorage.setItem('mp_pending_payment', JSON.stringify({
-        unitId: state.selectedUnit.id,
-        unitName: state.selectedUnit.name,
+        selectedUnit: state.selectedUnit,
         days: state.days,
         totalPrice: state.totalPrice,
         pricePerDay: state.pricePerDay,

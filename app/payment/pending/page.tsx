@@ -7,7 +7,7 @@ import { useBooking } from '@/app/context';
 export default function PaymentPendingPage() {
   const router = useRouter();
   const { restorePaymentResult } = useBooking();
-  const [countdown, setCountdown] = useState(6);
+  const [countdown, setCountdown] = useState(8);
 
   useEffect(() => {
     const pending = sessionStorage.getItem('mp_pending_payment');
@@ -41,26 +41,31 @@ export default function PaymentPendingPage() {
       <div className="w-full max-w-sm text-center">
 
         {/* Icono */}
-        <div className="relative w-24 h-24 mx-auto mb-8">
+        <div className="relative w-28 h-28 mx-auto mb-8">
           <div className="absolute inset-0 bg-yellow-500/10 rounded-full animate-pulse" />
-          <div className="relative w-24 h-24 bg-yellow-500/15 rounded-full flex items-center justify-center border border-yellow-500/20">
-            <svg className="w-12 h-12 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="relative w-28 h-28 bg-yellow-500/10 rounded-full flex items-center justify-center border border-yellow-500/20">
+            <svg className="w-14 h-14 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
         </div>
 
-        <h1 className="text-3xl font-bold text-white mb-2">Pago en revisión</h1>
-        <p className="text-slate-400 mb-2">Tu pago está siendo verificado.</p>
-        <p className="text-slate-500 text-sm mb-2">
-          Esto puede tomar unos minutos. Te notificaremos por email cuando se confirme.
+        <p className="text-yellow-400 text-sm font-medium tracking-wide uppercase mb-2">Pago pendiente</p>
+        <h1 className="text-3xl font-bold text-white mb-3">Tu pago está en revisión</h1>
+        <p className="text-slate-400 text-sm leading-relaxed mb-6">
+          Mercado Pago está verificando tu transacción. Este proceso puede tomar algunos minutos.
         </p>
 
-        {/* Info badge */}
-        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-4 py-3 mb-8">
-          <p className="text-yellow-300 text-xs">
-            No es necesario que esperes aquí. Una vez confirmado el pago, podrás continuar con tu reserva.
-          </p>
+        {/* Info */}
+        <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-2xl p-4 mb-8 text-left">
+          <div className="flex items-start gap-3">
+            <svg className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-yellow-200/70 text-xs leading-relaxed">
+              No necesitas esperar aquí. Una vez que el pago sea confirmado por Mercado Pago, podrás continuar con tu reserva desde el inicio.
+            </p>
+          </div>
         </div>
 
         <button

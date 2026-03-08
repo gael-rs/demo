@@ -37,6 +37,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true });
     }
 
+    // Obtener user_id desde el booking
+    const { data: booking } = await supabaseAdmin
+      .from('bookings')
+      .select('user_id, total_price_clp')
+      .eq('id', bookingId)
+      .single();
+
     // Mapear status de MP a nuestro sistema
     let paymentStatus: 'pending' | 'completed' | 'failed' | 'refunded' = 'pending';
     if (status === 'approved') {
@@ -47,7 +54,27 @@ export async function POST(request: NextRequest) {
       paymentStatus = 'refunded';
     }
 
-    // Actualizar booking en Supabase
+    // Registrar en tabla payments (upsert por mp_payment_id para evitar duplicados)
+    if (booking) {
+      await supabaseAdmin.from('payments').upsert(
+        {
+          booking_id: bookingId,
+          user_id: booking.user_id,
+          mp_payment_id: String(paymentId),
+          mp_preference_id: paymentData.order?.id ? String(paymentData.order.id) : null,
+          status: status === 'charged_back' ? 'charged_back' : paymentStatus === 'completed' ? 'approved' : paymentStatus === 'failed' ? 'rejected' : paymentStatus,
+          amount_clp: paymentData.transaction_amount ?? booking.total_price_clp,
+          payment_method: paymentData.payment_type_id ?? null,
+          payment_method_type: paymentData.payment_method_id ?? null,
+          installments: paymentData.installments ?? 1,
+          mp_response: paymentData as unknown as Record<string, unknown>,
+          error_message: paymentData.status_detail ?? null,
+        },
+        { onConflict: 'mp_payment_id' }
+      );
+    }
+
+    // Actualizar booking
     const { error } = await supabaseAdmin
       .from('bookings')
       .update({

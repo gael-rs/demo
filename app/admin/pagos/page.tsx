@@ -228,14 +228,7 @@ export default function PaymentsPage() {
                       </p>
                     </td>
                     <td className="px-5 py-4">
-                      <div>
-                        <PaymentStatusPill status={payment.status} />
-                        {payment.error_message && (
-                          <p className="text-red-400/70 text-xs mt-1 max-w-[160px] truncate" title={payment.error_message}>
-                            {payment.error_message}
-                          </p>
-                        )}
-                      </div>
+                      <PaymentStatusPill status={payment.status} />
                     </td>
                   </tr>
                 ))}

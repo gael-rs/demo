@@ -10,14 +10,17 @@ import {
 import {
   updateBookingStatus,
   updateBookingIdentityVerification,
+  getBookingById,
 } from '@/app/features/booking/booking.service';
+import { generateAccessCodeWithLock } from '@/app/features/access/smartlock.service';
 import ImageViewer from '@/app/features/admin/components/ImageViewer';
 import { supabase } from '@/app/shared/lib/supabase';
 
 export default function VerificationsPage() {
   const [verifications, setVerifications] = useState<any[]>([]);
+  const [allVerifications, setAllVerifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'pending' | 'all'>('pending');
+  const [filter, setFilter] = useState<'all' | 'pending'>('all');
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [rejectModal, setRejectModal] = useState<{ verificationId: string } | null>(null);
@@ -31,7 +34,7 @@ export default function VerificationsPage() {
   useEffect(() => {
     loadCurrentUser();
     loadVerifications();
-  }, [filter]);
+  }, []);
 
   const loadCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -41,10 +44,8 @@ export default function VerificationsPage() {
   const loadVerifications = async () => {
     setLoading(true);
     try {
-      const data = filter === 'pending'
-        ? await getPendingVerifications()
-        : await getAllVerifications();
-      setVerifications(data);
+      const data = await getAllVerifications();
+      setAllVerifications(data);
     } catch (error) {
       console.error('Error loading verifications:', error);
     } finally {
@@ -52,14 +53,26 @@ export default function VerificationsPage() {
     }
   };
 
+  const displayed = filter === 'pending'
+    ? allVerifications.filter(v => v.status === 'pending')
+    : allVerifications;
+
+  const pendingCount = allVerifications.filter(v => v.status === 'pending').length;
+
   const handleApprove = async (verificationId: string, bookingId: string) => {
     if (!currentUser) { showToast('Error: Usuario no autenticado', 'error'); return; }
-
     try {
       await approveVerification(verificationId, currentUser.id);
       await updateBookingIdentityVerification(bookingId, true);
       await updateBookingStatus(bookingId, 'confirmed');
-      showToast('Verificación validada correctamente', 'success');
+
+      // Auto-generar código de acceso
+      const booking = await getBookingById(bookingId);
+      if (booking) {
+        await generateAccessCodeWithLock(bookingId, booking.property_id, booking.check_in, booking.check_out);
+      }
+
+      showToast('Verificación aprobada y código de acceso generado', 'success');
       await loadVerifications();
     } catch (error) {
       console.error('Error approving verification:', error);
@@ -71,7 +84,7 @@ export default function VerificationsPage() {
     if (!currentUser || !rejectModal) return;
     try {
       await rejectVerification(rejectModal.verificationId, currentUser.id, rejectReason || 'Sin especificar');
-      showToast('Verificación rechazada correctamente', 'success');
+      showToast('Verificación rechazada', 'success');
       setRejectModal(null);
       setRejectReason('');
       await loadVerifications();
@@ -79,11 +92,6 @@ export default function VerificationsPage() {
       console.error('Error rejecting verification:', error);
       showToast('Error al rechazar la verificación', 'error');
     }
-  };
-
-  const handleReject = (verificationId: string) => {
-    setRejectModal({ verificationId });
-    setRejectReason('');
   };
 
   if (loading) {
@@ -140,45 +148,54 @@ export default function VerificationsPage() {
         </div>
       )}
 
-      <h1 className="text-3xl font-bold text-white mb-8">Verificaciones de Identidad</h1>
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-white mb-1">Verificaciones de Identidad</h1>
+        <p className="text-slate-400">{allVerifications.length} total · {pendingCount} pendiente{pendingCount !== 1 ? 's' : ''}</p>
+      </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-4 mb-6">
-        <button
-          onClick={() => setFilter('pending')}
-          className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-            filter === 'pending'
-              ? 'bg-emerald-500 text-white'
-              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-          }`}
-        >
-          Pendientes ({verifications.filter(v => v.status === 'pending').length})
-        </button>
+      <div className="flex gap-2 mb-6">
         <button
           onClick={() => setFilter('all')}
-          className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-            filter === 'all'
-              ? 'bg-emerald-500 text-white'
-              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+          className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors ${
+            filter === 'all' ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
           }`}
         >
-          Todas
+          Todas ({allVerifications.length})
+        </button>
+        <button
+          onClick={() => setFilter('pending')}
+          className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors flex items-center gap-2 ${
+            filter === 'pending' ? 'bg-yellow-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+          }`}
+        >
+          Pendientes
+          {pendingCount > 0 && (
+            <span className={`w-5 h-5 rounded-full text-xs flex items-center justify-center font-bold ${
+              filter === 'pending' ? 'bg-yellow-600 text-white' : 'bg-yellow-500 text-white'
+            }`}>
+              {pendingCount}
+            </span>
+          )}
         </button>
       </div>
 
-      {/* Verifications Grid */}
-      {verifications.length === 0 ? (
+      {/* Grid */}
+      {displayed.length === 0 ? (
         <div className="bg-slate-800 rounded-xl p-12 text-center">
-          <p className="text-slate-400 text-lg">No hay verificaciones {filter === 'pending' ? 'pendientes' : ''}</p>
+          <p className="text-slate-400 text-lg">
+            {filter === 'pending' ? 'No hay verificaciones pendientes' : 'No hay verificaciones'}
+          </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {verifications.map((verification) => (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {displayed.map((v) => (
             <VerificationCard
-              key={verification.id}
-              verification={verification}
+              key={v.id}
+              verification={v}
               onApprove={handleApprove}
-              onReject={handleReject}
+              onReject={(id) => { setRejectModal({ verificationId: id }); setRejectReason(''); }}
             />
           ))}
         </div>
@@ -188,12 +205,11 @@ export default function VerificationsPage() {
 }
 
 function FaceppResult({ verification }: { verification: any }) {
-  const [showJson, setShowJson] = useState(false);
   const score: number | null = verification.face_match_score;
 
   if (score === null || score === undefined) {
     return (
-      <div className="bg-slate-700/50 rounded-lg p-3 mb-4">
+      <div className="bg-slate-700/40 rounded-lg px-3 py-2 mb-4">
         <p className="text-slate-400 text-sm">Sin análisis biométrico</p>
       </div>
     );
@@ -202,29 +218,11 @@ function FaceppResult({ verification }: { verification: any }) {
   const passed = score >= 75;
 
   return (
-    <div className="bg-slate-700/50 rounded-lg p-3 mb-4 space-y-2">
-      <div className="flex items-center justify-between">
-        <span className="text-slate-300 text-sm font-medium">Análisis Face++</span>
-        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${passed ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-          {Math.round(score)}% — {passed ? 'Auto-verificado' : 'No coincide — revisión manual'}
-        </span>
-      </div>
-      {verification.facepp_response && (
-        <>
-          <button
-            type="button"
-            onClick={() => setShowJson(!showJson)}
-            className="text-xs text-slate-400 hover:text-slate-200 underline transition-colors"
-          >
-            {showJson ? 'Ocultar respuesta API' : 'Ver respuesta API'}
-          </button>
-          {showJson && (
-            <pre className="bg-slate-900 rounded p-2 text-xs text-slate-300 overflow-auto max-h-48 whitespace-pre-wrap break-all">
-              {JSON.stringify(verification.facepp_response, null, 2)}
-            </pre>
-          )}
-        </>
-      )}
+    <div className={`rounded-lg px-3 py-2.5 mb-4 flex items-center justify-between ${passed ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-red-500/10 border border-red-500/20'}`}>
+      <span className="text-slate-300 text-sm font-medium">Análisis Face++</span>
+      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${passed ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+        {Math.round(score)}% — {passed ? 'Auto-verificado' : 'Revisión manual'}
+      </span>
     </div>
   );
 }
@@ -241,50 +239,46 @@ function VerificationCard({
   const [showImages, setShowImages] = useState(false);
 
   return (
-    <div className="bg-slate-800 rounded-xl p-6">
+    <div className="bg-slate-800 rounded-xl p-5 border border-slate-700/50">
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="text-xl font-semibold text-white">
-            {verification.user?.name || 'Usuario sin nombre'}
-          </h3>
+          <h3 className="text-lg font-semibold text-white">{verification.user?.name || 'Usuario sin nombre'}</h3>
           <p className="text-slate-400 text-sm">{verification.user?.email}</p>
-          <p className="text-slate-500 text-xs mt-1">
-            ID: {verification.id.substring(0, 8)}...
-          </p>
         </div>
         <StatusBadge status={verification.status} />
       </div>
 
-      {/* Booking Info */}
+      {/* Booking info */}
       {verification.booking && (
-        <div className="bg-slate-700/50 rounded-lg p-3 mb-4">
-          <p className="text-slate-300 text-sm">
-            <strong>Reserva:</strong> {verification.booking.property?.name}
-          </p>
-          <p className="text-slate-400 text-xs mt-1">
-            {new Date(verification.booking.check_in).toLocaleDateString()} - {new Date(verification.booking.check_out).toLocaleDateString()}
+        <div className="bg-slate-700/40 rounded-lg px-3 py-2 mb-4">
+          <p className="text-slate-300 text-sm font-medium">{verification.booking.property?.name}</p>
+          <p className="text-slate-400 text-xs mt-0.5">
+            {new Date(verification.booking.check_in).toLocaleDateString('es-CL')} →{' '}
+            {new Date(verification.booking.check_out).toLocaleDateString('es-CL')}
           </p>
         </div>
       )}
 
-      {/* Date */}
-      <p className="text-slate-400 text-sm mb-4">
-        Enviado: {new Date(verification.created_at).toLocaleString()}
+      {/* Fecha envío */}
+      <p className="text-slate-500 text-xs mb-4">
+        Enviado {new Date(verification.created_at).toLocaleString('es-CL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
       </p>
 
-      {/* Face++ Result */}
+      {/* Face++ score */}
       <FaceppResult verification={verification} />
 
-      {/* Images Toggle */}
+      {/* Documentos toggle */}
       <button
         onClick={() => setShowImages(!showImages)}
-        className="w-full mb-4 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+        className="w-full mb-4 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm rounded-lg transition-colors flex items-center justify-center gap-2"
       >
-        {showImages ? '⬆️ Ocultar documentos' : '⬇️ Ver documentos'}
+        <svg className={`w-4 h-4 transition-transform ${showImages ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+        {showImages ? 'Ocultar documentos' : 'Ver documentos'}
       </button>
 
-      {/* Images with ImageViewer */}
       {showImages && (
         <div className="mb-4">
           <ImageViewer
@@ -299,37 +293,33 @@ function VerificationCard({
         </div>
       )}
 
-      {/* Actions: solo cuando está pendiente */}
+      {/* Acciones pendiente */}
       {verification.status === 'pending' && verification.booking_id && (
-        <div className="flex gap-3">
+        <div className="flex gap-3 mt-2">
           <button
             onClick={() => onApprove(verification.id, verification.booking_id)}
-            className="flex-1 px-4 py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold rounded-lg transition-colors"
+            className="flex-1 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold rounded-xl transition-colors text-sm"
           >
             ✓ Validar
           </button>
           <button
             onClick={() => onReject(verification.id)}
-            className="flex-1 px-4 py-3 bg-red-500 hover:bg-red-400 text-white font-semibold rounded-lg transition-colors"
+            className="flex-1 px-4 py-2.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 font-semibold rounded-xl transition-colors text-sm border border-red-500/20"
           >
-            ✗ No validar
+            ✗ Rechazar
           </button>
         </div>
       )}
 
-      {/* Review Info */}
+      {/* Info revisión */}
       {verification.status !== 'pending' && (
-        <div className="bg-slate-700/50 rounded-lg p-3 mt-4">
-          <p className="text-slate-300 text-sm">
-            <strong>Revisado por:</strong> {verification.reviewer?.name || 'Admin'}
-          </p>
-          <p className="text-slate-400 text-xs mt-1">
-            {new Date(verification.reviewed_at).toLocaleString()}
+        <div className="bg-slate-700/40 rounded-lg px-3 py-2 mt-3">
+          <p className="text-slate-400 text-xs">
+            Revisado por <strong className="text-slate-300">{verification.reviewer?.name || 'Admin'}</strong> ·{' '}
+            {new Date(verification.reviewed_at).toLocaleDateString('es-CL')}
           </p>
           {verification.rejection_reason && (
-            <p className="text-red-400 text-sm mt-2">
-              <strong>Motivo:</strong> {verification.rejection_reason}
-            </p>
+            <p className="text-red-400 text-xs mt-1">Motivo: {verification.rejection_reason}</p>
           )}
         </div>
       )}
@@ -338,17 +328,11 @@ function VerificationCard({
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const statusConfig: Record<string, { label: string; color: string }> = {
-    pending: { label: 'Pendiente', color: 'bg-yellow-500/20 text-yellow-400' },
-    approved: { label: 'Verificada', color: 'bg-green-500/20 text-green-400' },
-    rejected: { label: 'Rechazada', color: 'bg-red-500/20 text-red-400' },
+  const config: Record<string, { label: string; color: string }> = {
+    pending:  { label: 'Pendiente',  color: 'bg-yellow-500/20 text-yellow-400' },
+    approved: { label: 'Verificada', color: 'bg-emerald-500/20 text-emerald-400' },
+    rejected: { label: 'Rechazada',  color: 'bg-red-500/20 text-red-400' },
   };
-
-  const config = statusConfig[status] || statusConfig.pending;
-
-  return (
-    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${config.color}`}>
-      {config.label}
-    </span>
-  );
+  const { label, color } = config[status] || config.pending;
+  return <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${color}`}>{label}</span>;
 }

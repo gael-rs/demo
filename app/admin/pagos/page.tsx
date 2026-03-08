@@ -1,33 +1,37 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getAllBookings } from '@/app/features/booking/booking.service';
 import { supabase } from '@/app/shared/lib/supabase';
 
-interface BookingWithPayment {
+interface Payment {
   id: string;
-  user?: { name: string; email: string };
-  property?: { name: string };
-  total_price_clp: number;
-  payment_status: 'pending' | 'completed' | 'failed' | 'refunded';
-  status: string;
-  days: number;
-  check_in: string;
-  check_out: string;
+  booking_id: string;
+  mp_payment_id: string | null;
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled' | 'refunded' | 'charged_back';
+  amount_clp: number;
+  payment_method: string | null;
+  payment_method_type: string | null;
+  error_message: string | null;
   created_at: string;
+  booking: {
+    days: number;
+    check_in: string;
+    check_out: string;
+    property: { name: string } | null;
+    user: { name: string; email: string } | null;
+  } | null;
 }
 
+type FilterStatus = 'all' | 'approved' | 'pending' | 'rejected' | 'refunded';
+
 export default function PaymentsPage() {
-  const [bookings, setBookings] = useState<BookingWithPayment[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'completed' | 'pending' | 'failed' | 'refunded'>('all');
+  const [filter, setFilter] = useState<FilterStatus>('all');
   const [search, setSearch] = useState('');
-  const [updating, setUpdating] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   const showToast = (message: string, type: 'success' | 'error') => {
     setToast({ message, type });
@@ -36,66 +40,51 @@ export default function PaymentsPage() {
 
   const loadData = async () => {
     try {
-      const data = await getAllBookings();
-      setBookings(data as BookingWithPayment[]);
+      const { data, error } = await supabase
+        .from('payments')
+        .select(`
+          id, booking_id, mp_payment_id, status, amount_clp,
+          payment_method, payment_method_type, error_message, created_at,
+          booking:bookings (
+            days, check_in, check_out,
+            property:properties ( name ),
+            user:users ( name, email )
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPayments((data as unknown as Payment[]) || []);
     } catch (error) {
       console.error('Error loading payments:', error);
+      showToast('Error al cargar pagos', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleUpdatePaymentStatus = async (bookingId: string, newStatus: string) => {
-    setUpdating(bookingId);
-    try {
-      const { error } = await supabase
-        .from('bookings')
-        .update({ payment_status: newStatus })
-        .eq('id', bookingId);
-
-      if (error) throw error;
-
-      setBookings(prev =>
-        prev.map(b => b.id === bookingId ? { ...b, payment_status: newStatus as any } : b)
-      );
-      showToast('Estado de pago actualizado', 'success');
-    } catch {
-      showToast('Error al actualizar el estado', 'error');
-    } finally {
-      setUpdating(null);
-    }
-  };
-
-  const filtered = bookings.filter(b => {
-    if (filter !== 'all' && b.payment_status !== filter) return false;
+  const filtered = payments.filter(p => {
+    if (filter !== 'all' && p.status !== filter) return false;
     if (search) {
       const q = search.toLowerCase();
       return (
-        b.user?.name?.toLowerCase().includes(q) ||
-        b.user?.email?.toLowerCase().includes(q) ||
-        b.property?.name?.toLowerCase().includes(q) ||
-        b.id.toLowerCase().includes(q)
+        p.booking?.user?.name?.toLowerCase().includes(q) ||
+        p.booking?.user?.email?.toLowerCase().includes(q) ||
+        p.booking?.property?.name?.toLowerCase().includes(q) ||
+        p.mp_payment_id?.toLowerCase().includes(q) ||
+        p.id.toLowerCase().includes(q)
       );
     }
     return true;
   });
 
   // Métricas
-  const totalRevenue = bookings
-    .filter(b => b.payment_status === 'completed')
-    .reduce((sum, b) => sum + b.total_price_clp, 0);
-
-  const pendingRevenue = bookings
-    .filter(b => b.payment_status === 'pending')
-    .reduce((sum, b) => sum + b.total_price_clp, 0);
-
-  const refundedRevenue = bookings
-    .filter(b => b.payment_status === 'refunded')
-    .reduce((sum, b) => sum + b.total_price_clp, 0);
-
-  const completedCount = bookings.filter(b => b.payment_status === 'completed').length;
-  const pendingCount = bookings.filter(b => b.payment_status === 'pending').length;
-  const failedCount = bookings.filter(b => b.payment_status === 'failed').length;
+  const totalRevenue = payments.filter(p => p.status === 'approved').reduce((s, p) => s + p.amount_clp, 0);
+  const pendingRevenue = payments.filter(p => p.status === 'pending').reduce((s, p) => s + p.amount_clp, 0);
+  const refundedRevenue = payments.filter(p => p.status === 'refunded' || p.status === 'charged_back').reduce((s, p) => s + p.amount_clp, 0);
+  const approvedCount = payments.filter(p => p.status === 'approved').length;
+  const pendingCount = payments.filter(p => p.status === 'pending').length;
+  const rejectedCount = payments.filter(p => p.status === 'rejected' || p.status === 'cancelled').length;
 
   if (loading) {
     return (
@@ -129,19 +118,19 @@ export default function PaymentsPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/10 border border-emerald-500/20 rounded-xl p-5">
-          <p className="text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-2">Ingresos confirmados</p>
+          <p className="text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-2">Ingresos aprobados</p>
           <p className="text-2xl font-bold text-white">${totalRevenue.toLocaleString('es-CL')}</p>
-          <p className="text-slate-500 text-xs mt-1">CLP · {completedCount} pagos</p>
+          <p className="text-slate-500 text-xs mt-1">CLP · {approvedCount} pagos</p>
         </div>
         <div className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/10 border border-yellow-500/20 rounded-xl p-5">
-          <p className="text-yellow-400 text-xs font-semibold uppercase tracking-wider mb-2">Pagos pendientes</p>
+          <p className="text-yellow-400 text-xs font-semibold uppercase tracking-wider mb-2">Pendientes</p>
           <p className="text-2xl font-bold text-white">${pendingRevenue.toLocaleString('es-CL')}</p>
           <p className="text-slate-500 text-xs mt-1">CLP · {pendingCount} pagos</p>
         </div>
         <div className="bg-gradient-to-br from-red-500/10 to-red-600/10 border border-red-500/20 rounded-xl p-5">
-          <p className="text-red-400 text-xs font-semibold uppercase tracking-wider mb-2">Fallidos</p>
-          <p className="text-2xl font-bold text-white">{failedCount}</p>
-          <p className="text-slate-500 text-xs mt-1">pagos no procesados</p>
+          <p className="text-red-400 text-xs font-semibold uppercase tracking-wider mb-2">Rechazados</p>
+          <p className="text-2xl font-bold text-white">{rejectedCount}</p>
+          <p className="text-slate-500 text-xs mt-1">transacciones</p>
         </div>
         <div className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 border border-purple-500/20 rounded-xl p-5">
           <p className="text-purple-400 text-xs font-semibold uppercase tracking-wider mb-2">Reembolsados</p>
@@ -155,24 +144,22 @@ export default function PaymentsPage() {
         <div className="flex-1">
           <input
             type="text"
-            placeholder="Buscar por usuario, propiedad o ID..."
+            placeholder="Buscar por usuario, propiedad, ID de MP..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder-slate-500"
           />
         </div>
         <div className="flex flex-wrap gap-2">
-          {(['all', 'completed', 'pending', 'failed', 'refunded'] as const).map((s) => (
+          {(['all', 'approved', 'pending', 'rejected', 'refunded'] as const).map((s) => (
             <button
               key={s}
               onClick={() => setFilter(s)}
               className={`px-3 py-2 rounded-lg font-medium transition-colors text-sm ${
-                filter === s
-                  ? 'bg-emerald-500 text-white'
-                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                filter === s ? 'bg-emerald-500 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
               }`}
             >
-              {s === 'all' ? 'Todos' : s === 'completed' ? 'Aprobados' : s === 'pending' ? 'Pendientes' : s === 'failed' ? 'Fallidos' : 'Reembolsados'}
+              {s === 'all' ? 'Todos' : s === 'approved' ? 'Aprobados' : s === 'pending' ? 'Pendientes' : s === 'rejected' ? 'Rechazados' : 'Reembolsados'}
             </button>
           ))}
         </div>
@@ -192,58 +179,63 @@ export default function PaymentsPage() {
             <table className="w-full">
               <thead className="bg-slate-700/50">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">ID</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Cliente</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Propiedad</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Monto</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Fecha</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Estado Pago</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Acciones</th>
+                  <th className="px-5 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">MP ID</th>
+                  <th className="px-5 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Cliente</th>
+                  <th className="px-5 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Propiedad</th>
+                  <th className="px-5 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Monto</th>
+                  <th className="px-5 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Método</th>
+                  <th className="px-5 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Fecha</th>
+                  <th className="px-5 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Estado</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/50">
-                {filtered.map((booking) => (
-                  <tr key={booking.id} className="hover:bg-slate-700/30 transition-colors">
-                    <td className="px-6 py-4">
-                      <span className="text-slate-500 font-mono text-xs">{booking.id.substring(0, 8)}...</span>
+                {filtered.map((payment) => (
+                  <tr key={payment.id} className="hover:bg-slate-700/30 transition-colors">
+                    <td className="px-5 py-4">
+                      <span className="text-slate-400 font-mono text-xs">
+                        {payment.mp_payment_id ?? <span className="text-slate-600 italic">sin ID</span>}
+                      </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <p className="text-white font-medium text-sm">{booking.user?.name || '—'}</p>
-                      <p className="text-slate-500 text-xs">{booking.user?.email}</p>
+                    <td className="px-5 py-4">
+                      <p className="text-white font-medium text-sm">{payment.booking?.user?.name || '—'}</p>
+                      <p className="text-slate-500 text-xs">{payment.booking?.user?.email}</p>
                     </td>
-                    <td className="px-6 py-4">
-                      <p className="text-slate-300 text-sm">{booking.property?.name || '—'}</p>
-                      <p className="text-slate-500 text-xs">{booking.days} día{booking.days !== 1 ? 's' : ''}</p>
+                    <td className="px-5 py-4">
+                      <p className="text-slate-300 text-sm">{payment.booking?.property?.name || '—'}</p>
+                      <p className="text-slate-500 text-xs">{payment.booking?.days} día{payment.booking?.days !== 1 ? 's' : ''}</p>
                     </td>
-                    <td className="px-6 py-4">
-                      <p className="text-white font-bold">${booking.total_price_clp.toLocaleString('es-CL')}</p>
+                    <td className="px-5 py-4">
+                      <p className="text-white font-bold">${payment.amount_clp.toLocaleString('es-CL')}</p>
                       <p className="text-slate-500 text-xs">CLP</p>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-4">
+                      {payment.payment_method_type ? (
+                        <span className="px-2 py-1 bg-slate-700 rounded text-slate-300 text-xs font-medium capitalize">
+                          {payment.payment_method_type}
+                        </span>
+                      ) : (
+                        <span className="text-slate-600 text-xs">—</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-4">
                       <p className="text-slate-400 text-sm">
-                        {new Date(booking.created_at).toLocaleDateString('es-CL', {
-                          day: '2-digit', month: 'short', year: 'numeric'
+                        {new Date(payment.created_at).toLocaleDateString('es-CL', {
+                          day: '2-digit', month: 'short', year: 'numeric',
                         })}
                       </p>
+                      <p className="text-slate-600 text-xs">
+                        {new Date(payment.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
                     </td>
-                    <td className="px-6 py-4">
-                      <PaymentStatusPill status={booking.payment_status} />
-                    </td>
-                    <td className="px-6 py-4">
-                      {updating === booking.id ? (
-                        <div className="w-5 h-5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
-                      ) : (
-                        <select
-                          value={booking.payment_status}
-                          onChange={(e) => handleUpdatePaymentStatus(booking.id, e.target.value)}
-                          className="text-xs bg-slate-700 text-white border border-slate-600 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                        >
-                          <option value="pending">Pendiente</option>
-                          <option value="completed">Aprobado</option>
-                          <option value="failed">Fallido</option>
-                          <option value="refunded">Reembolsado</option>
-                        </select>
-                      )}
+                    <td className="px-5 py-4">
+                      <div>
+                        <PaymentStatusPill status={payment.status} />
+                        {payment.error_message && (
+                          <p className="text-red-400/70 text-xs mt-1 max-w-[160px] truncate" title={payment.error_message}>
+                            {payment.error_message}
+                          </p>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -254,7 +246,7 @@ export default function PaymentsPage() {
       </div>
 
       <p className="text-slate-600 text-xs mt-4 text-center">
-        {filtered.length} de {bookings.length} transacciones
+        {filtered.length} de {payments.length} transacciones
       </p>
     </div>
   );
@@ -262,15 +254,17 @@ export default function PaymentsPage() {
 
 function PaymentStatusPill({ status }: { status: string }) {
   const config: Record<string, { label: string; color: string }> = {
-    pending:   { label: 'Pendiente',    color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' },
-    completed: { label: 'Aprobado',     color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' },
-    failed:    { label: 'Fallido',      color: 'bg-red-500/20 text-red-400 border-red-500/30' },
-    refunded:  { label: 'Reembolsado',  color: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },
+    pending:      { label: 'Pendiente',    color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' },
+    approved:     { label: 'Aprobado',     color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' },
+    rejected:     { label: 'Rechazado',    color: 'bg-red-500/20 text-red-400 border-red-500/30' },
+    cancelled:    { label: 'Cancelado',    color: 'bg-slate-500/20 text-slate-400 border-slate-500/30' },
+    refunded:     { label: 'Reembolsado',  color: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },
+    charged_back: { label: 'Contracargo',  color: 'bg-orange-500/20 text-orange-400 border-orange-500/30' },
   };
 
   const { label, color } = config[status] || config.pending;
   return (
-    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${color}`}>
+    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${color}`}>
       {label}
     </span>
   );

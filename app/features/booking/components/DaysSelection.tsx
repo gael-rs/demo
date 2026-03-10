@@ -222,7 +222,7 @@ export default function DaysSelection() {
   // ── Render ────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-slate-900">
-      <div className="pt-20 px-4 pb-8 max-w-lg mx-auto">
+      <div className="pt-24 px-4 pb-8 max-w-lg mx-auto">
         {/* Back Button */}
         <button
           onClick={() => goToStep('unit-selection')}

@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense } from 'react';
 import { useBooking } from '@/app/context';
+import Header from '@/app/shared/components/Header';
+import Footer from '@/app/shared/components/Footer';
 
 type Phase = 'confirming' | 'ready';
 
@@ -14,7 +16,7 @@ function SuccessContent() {
 
   const [phase, setPhase] = useState<Phase>('confirming');
   const [pollAttempt, setPollAttempt] = useState(0);
-  const [countdown, setCountdown] = useState(5);
+  const [countdown, setCountdown] = useState(30);
 
   // Fase 1: confirmar pago mediante polling
   useEffect(() => {
@@ -88,25 +90,31 @@ function SuccessContent() {
   if (phase === 'confirming') {
     const progress = Math.min((pollAttempt / 8) * 85, 85);
     return (
-      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center px-6">
-        <div className="w-full max-w-sm text-center">
-          <div className="w-16 h-16 mx-auto mb-6 border-4 border-slate-700 border-t-emerald-500 rounded-full animate-spin" />
-          <h2 className="text-xl font-semibold text-white mb-2">Confirmando tu pago</h2>
-          <p className="text-slate-500 text-sm mb-8">Estamos verificando la transacción con Mercado Pago...</p>
-          <div className="w-full bg-slate-800 rounded-full h-1 overflow-hidden">
-            <div
-              className="bg-emerald-500 h-1 rounded-full transition-all duration-700"
-              style={{ width: `${progress}%` }}
-            />
+      <>
+        <Header />
+        <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center px-6 pt-20">
+          <div className="w-full max-w-sm text-center">
+            <div className="w-16 h-16 mx-auto mb-6 border-4 border-slate-700 border-t-emerald-500 rounded-full animate-spin" />
+            <h2 className="text-xl font-semibold text-white mb-2">Confirmando tu pago</h2>
+            <p className="text-slate-500 text-sm mb-8">Estamos verificando la transacción con Mercado Pago...</p>
+            <div className="w-full bg-slate-800 rounded-full h-1 overflow-hidden">
+              <div
+                className="bg-emerald-500 h-1 rounded-full transition-all duration-700"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
           </div>
         </div>
-      </div>
+        <Footer />
+      </>
     );
   }
 
   // ─── Pantalla: pago validado + countdown ─────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center px-6">
+    <>
+      <Header />
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center px-6 pt-20">
       <div className="w-full max-w-sm text-center">
 
         {/* Icono check */}
@@ -165,7 +173,9 @@ function SuccessContent() {
           Continuar ahora →
         </button>
       </div>
-    </div>
+      </div>
+      <Footer />
+    </>
   );
 }
 

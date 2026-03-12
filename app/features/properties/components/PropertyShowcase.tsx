@@ -9,6 +9,7 @@ export default function PropertyShowcase() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [autoResetKey, setAutoResetKey] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -58,14 +59,16 @@ export default function PropertyShowcase() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [properties.length]);
+  }, [properties.length, autoResetKey]);
 
   const handlePrevious = useCallback(() => {
     setCurrentIndex((prev) => (prev - 1 + properties.length) % properties.length);
+    setAutoResetKey((k) => k + 1);
   }, [properties.length]);
 
   const handleNext = useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % properties.length);
+    setAutoResetKey((k) => k + 1);
   }, [properties.length]);
 
   const handleViewAvailability = () => {
@@ -241,7 +244,7 @@ export default function PropertyShowcase() {
             {properties.map((_, index) => (
               <button
                 key={index}
-                onClick={() => setCurrentIndex(index)}
+                onClick={() => { setCurrentIndex(index); setAutoResetKey((k) => k + 1); }}
                 className={`h-2 rounded-full transition-all duration-300 ${
                   index === currentIndex
                     ? 'w-8 bg-emerald-500'

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { motion } from 'motion/react';
 import { useBooking } from '@/app/context';
 import PropertyShowcase from '@/app/features/properties/components/PropertyShowcase';
 import ShinyText from '@/app/shared/components/ShinyText';
@@ -102,40 +103,56 @@ export default function Landing() {
           <div className="relative z-10 flex items-center h-full w-full max-w-7xl mx-auto px-16 lg:px-20 pt-20">
             <div>
               <div className="mb-14">
-                <SplitText
-                  text="Entra a vivir en minutos"
-                  tag="p"
-                  className="text-4xl lg:text-5xl font-bold text-white leading-[1.05] mb-2"
-                  splitType="words"
-                  duration={0.7}
-                  delay={80}
-                  from={{ opacity: 0, y: 24 }}
-                  to={{ opacity: 1, y: 0 }}
-                />
-                <ShinyText
-                  text="Sin papeleo, sin intermediarios, sin fricción"
-                  className="text-4xl lg:text-2xl font-medium leading-[1.35]"
-                  color="#94a3b8" shineColor="#e8f0fe"
-                  speed={3} delay={9} spread={90} initialOffset={0}
-                />
+                <div className="mb-2">
+                  <SplitText
+                    text="Entra a vivir en minutos"
+                    tag="p"
+                    className="text-4xl lg:text-5xl font-bold text-white leading-[1.05]"
+                    splitType="words"
+                    duration={0.7}
+                    delay={80}
+                    from={{ opacity: 0, y: 24 }}
+                    to={{ opacity: 1, y: 0 }}
+                  />
+                </div>
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.55, ease: 'easeOut' }}
+                >
+                  <ShinyText
+                    text="Sin papeleo, sin intermediarios, sin fricción"
+                    className="text-xl lg:text-2xl font-medium leading-[1.35]"
+                    color="#94a3b8" shineColor="#e8f0fe"
+                    speed={3} delay={9} spread={90} initialOffset={0}
+                  />
+                </motion.div>
               </div>
               <div className="mb-10">
-                <SplitText
-                  text="Quédate el tiempo que quieras"
-                  tag="p"
-                  className="text-4xl lg:text-5xl font-bold text-emerald-400 leading-[1.05] mb-2"
-                  splitType="words"
-                  duration={0.7}
-                  delay={80}
-                  from={{ opacity: 0, y: 24 }}
-                  to={{ opacity: 1, y: 0 }}
-                />
-                <ShinyText
-                  text="Un hogar que se adapta a tu etapa, no al revés"
-                  className="text-4xl lg:text-2xl font-medium leading-[1.35]"
-                  color="#94a3b8" shineColor="#e8f0fe"
-                  speed={3} delay={9} spread={90} initialOffset={9}
-                />
+                <div className="mb-2">
+                  <SplitText
+                    text="Quédate el tiempo que quieras"
+                    tag="p"
+                    className="text-4xl lg:text-5xl font-bold text-emerald-400 leading-[1.05]"
+                    splitType="words"
+                    duration={0.7}
+                    delay={80}
+                    from={{ opacity: 0, y: 24 }}
+                    to={{ opacity: 1, y: 0 }}
+                  />
+                </div>
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.85, ease: 'easeOut' }}
+                >
+                  <ShinyText
+                    text="Un hogar que se adapta a tu etapa, no al revés"
+                    className="text-xl lg:text-2xl font-medium leading-[1.35]"
+                    color="#94a3b8" shineColor="#e8f0fe"
+                    speed={3} delay={9} spread={90} initialOffset={9}
+                  />
+                </motion.div>
               </div>
               <button
                 onClick={handleCtaClick}

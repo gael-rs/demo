@@ -265,7 +265,10 @@ export default function PropertiesPage() {
                 </label>
                 <select
                   value={formData.category || ''}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value || null })}
+                  onChange={(e) => {
+                    const cat = ACCOMMODATION_CATEGORIES.find(c => c.name.toUpperCase() === e.target.value);
+                    setFormData({ ...formData, category: e.target.value || null, capacity: cat?.maxPersons ?? formData.capacity });
+                  }}
                   className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 >
                   <option value="">Sin categoría</option>
@@ -275,6 +278,19 @@ export default function PropertiesPage() {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 text-sm font-medium mb-2">
+                  Capacidad máxima
+                </label>
+                <input
+                  type="number"
+                  readOnly
+                  value={formData.capacity}
+                  className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-400 cursor-not-allowed"
+                />
+                <p className="text-slate-500 text-xs mt-1">Se deriva de la categoría</p>
               </div>
             </div>
 
@@ -292,8 +308,8 @@ export default function PropertiesPage() {
               />
             </div>
 
-            {/* Capacity & Rooms */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Price & Rooms */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-slate-300 text-sm font-medium mb-2">
                   Precio Mensual Base (CLP) *
@@ -316,20 +332,6 @@ export default function PropertiesPage() {
                     <p>31–60 días: <span className="text-emerald-400">${Math.round(formData.base_price_clp * 0.033).toLocaleString('es-CL')}/día</span></p>
                   </div>
                 )}
-              </div>
-
-              <div>
-                <label className="block text-slate-300 text-sm font-medium mb-2">
-                  Capacidad *
-                </label>
-                <input
-                  type="number"
-                  required
-                  min="1"
-                  value={formData.capacity}
-                  onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) })}
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                />
               </div>
 
               <div>

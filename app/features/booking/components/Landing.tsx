@@ -3,10 +3,27 @@
 import { useState } from 'react';
 import { useBooking } from '@/app/context';
 import PropertyShowcase from '@/app/features/properties/components/PropertyShowcase';
+import ShinyText from '@/app/shared/components/ShinyText';
 
 export default function Landing() {
   const { goToStep, currency, convertPrice } = useBooking();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [simDays, setSimDays] = useState(30);
+
+  const PRICING_TIERS = [
+    { min: 1,  max: 7,   multiplier: 0.10,   label: '1–7 días'    },
+    { min: 8,  max: 15,  multiplier: 0.08,   label: '8–15 días'   },
+    { min: 16, max: 30,  multiplier: 0.06,   label: '16–30 días'  },
+    { min: 31, max: 60,  multiplier: 0.033,  label: '31–60 días'  },
+    { min: 61, max: 90,  multiplier: 0.0315, label: '61–90 días'  },
+    { min: 91, max: 365, multiplier: 0.03,   label: '91–365 días' },
+  ];
+  const BASE_PRICE = 360000;
+  const simTier = PRICING_TIERS.find(t => simDays >= t.min && simDays <= t.max) ?? PRICING_TIERS[PRICING_TIERS.length - 1];
+  const simPricePerDayClp = Math.round(BASE_PRICE * simTier.multiplier);
+  const simTotalClp = simPricePerDayClp * simDays;
+  const simPriceDisplay = convertPrice(simPricePerDayClp);
+  const simTotalDisplay = convertPrice(simTotalClp);
 
   const handleCtaClick = () => goToStep('unit-selection');
 
@@ -20,7 +37,7 @@ export default function Landing() {
           {/* Imagen de fondo */}
           <div
             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-            style={{ backgroundImage: "url('/img/fondo_hero_3.jpg')" }}
+            style={{ backgroundImage: "url('/img/hero.png')" }}
           />
           {/* Overlay uniforme para legibilidad en todo el hero */}
           <div className="absolute inset-0 bg-slate-900/60" />
@@ -31,18 +48,28 @@ export default function Landing() {
 
           {/* Contenido centrado */}
           <div className="absolute inset-0 flex flex-col justify-center px-6 pt-20 pb-8">
-            <h1 className="text-4xl font-bold text-white leading-[1.1] mb-5">
-              Entra a vivir<br />
-              en minutos.<br />
-              <span className="text-emerald-400">Quédate el tiempo</span><br />
-              que necesites.
-            </h1>
-            <p className="text-slate-200 text-base mb-1 leading-relaxed">
-              Sin papeleo, sin intermediarios, sin fricción.
-            </p>
-            <p className="text-slate-300 text-base mb-8 leading-relaxed">
-              Un hogar que se adapta a tu etapa, no al revés.
-            </p>
+            <div className="mb-6">
+              <p className="text-4xl font-bold text-white leading-[1.05] mb-2">
+                Entra a vivir en minutos.
+              </p>
+              <ShinyText
+                text="Sin papeleo, sin intermediarios, sin fricción."
+                className="text-base leading-snug"
+                color="#94a3b8" shineColor="#e8f0fe"
+                speed={3} delay={9} spread={90} initialOffset={0}
+              />
+            </div>
+            <div className="mb-8">
+              <p className="text-4xl font-bold text-emerald-400 leading-[1.05] mb-2">
+                Quédate el tiempo que quieras.
+              </p>
+              <ShinyText
+                text="Un hogar que se adapta a tu etapa, no al revés."
+                className="text-base leading-snug"
+                color="#94a3b8" shineColor="#e8f0fe"
+                speed={3} delay={9} spread={90} initialOffset={9}
+              />
+            </div>
             <button
               onClick={handleCtaClick}
               className="w-full px-8 py-4 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-lg rounded-xl transition-colors active:scale-[0.98] shadow-lg shadow-emerald-500/25"
@@ -60,7 +87,7 @@ export default function Landing() {
           {/* Background image */}
           <div
             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-            style={{ backgroundImage: "url('/img/fondo_hero_3.jpg')" }}
+            style={{ backgroundImage: "url('/img/hero.png')" }}
           />
           {/* Gradient: opaco izquierda → transparente derecha */}
           <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-900/80 to-transparent" />
@@ -69,27 +96,37 @@ export default function Landing() {
 
           {/* Contenido centrado verticalmente */}
           <div className="relative z-10 flex items-center h-full w-full max-w-7xl mx-auto px-16 lg:px-20 pt-20">
-            <div className="max-w-xl">
-              <h1 className="text-5xl lg:text-6xl font-bold text-white leading-[1.1] mb-6">
-                Entra a vivir<br />
-                en minutos.<br />
-                <span className="text-emerald-400">Quédate el tiempo</span><br />
-                que necesites.
-              </h1>
-              <p className="text-slate-300 text-lg mb-1 leading-relaxed">
-                Sin papeleo, sin intermediarios, sin fricción.
-              </p>
-              <p className="text-slate-400 text-lg mb-10 leading-relaxed">
-                Un hogar que se adapta a tu etapa, no al revés.
-              </p>
+            <div>
+              <div className="mb-14">
+                <p className="text-4xl lg:text-5xl font-bold text-white leading-[1.05] mb-2 whitespace-nowrap">
+                  Entra a vivir en minutos
+                </p>
+                <ShinyText
+                  text="Sin papeleo, sin intermediarios, sin fricción"
+                  className="text-4xl lg:text-2xl font-medium leading-[1.35]"
+                  color="#94a3b8" shineColor="#e8f0fe"
+                  speed={3} delay={9} spread={90} initialOffset={0}
+                />
+              </div>
+              <div className="mb-10">
+                <p className="text-4xl lg:text-5xl font-bold text-emerald-400 leading-[1.05] mb-2 whitespace-nowrap">
+                  Quédate el tiempo que quieras
+                </p>
+                <ShinyText
+                  text="Un hogar que se adapta a tu etapa, no al revés"
+                  className="text-4xl lg:text-2xl font-medium leading-[1.35]"
+                  color="#94a3b8" shineColor="#e8f0fe"
+                  speed={3} delay={9} spread={90} initialOffset={9}
+                />
+              </div>
               <button
                 onClick={handleCtaClick}
                 className="px-8 py-4 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-lg rounded-xl transition-colors active:scale-[0.98] shadow-lg shadow-emerald-500/25"
               >
                 Entrar a vivir
               </button>
-              <p className="mt-10 text-slate-400 text-xs tracking-widest uppercase">
-                Housing as a Living — Una nueva forma de habitar.
+              <p className="mt-8 text-slate-300 text-sm tracking-wider">
+                Housing as a Living | Una nueva forma de habitar
               </p>
             </div>
           </div>
@@ -113,7 +150,7 @@ export default function Landing() {
             <p className="text-slate-400 text-sm mt-1">Acceso digital</p>
           </div>
           <div className="text-center">
-            <p className="text-3xl md:text-4xl font-bold text-emerald-400">+100%</p>
+            <p className="text-3xl md:text-4xl font-bold text-emerald-400">100%</p>
             <p className="text-slate-400 text-sm mt-1">Ahorro por día en estadías largas</p>
           </div>
         </div>
@@ -128,7 +165,6 @@ export default function Landing() {
       <section id="como-funciona" className="py-24 px-6 bg-slate-800/50">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-14">
-            <p className="text-emerald-500 text-xs font-semibold tracking-widest uppercase mb-3">El proceso</p>
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">¿Cómo funciona Homested?</h2>
             <p className="text-slate-500 text-base">Cuatro pasos simples para empezar tu próxima etapa</p>
           </div>
@@ -203,8 +239,9 @@ export default function Landing() {
         <div className="max-w-5xl mx-auto">
           {/* Header */}
           <div className="text-center mb-14">
-            <p className="text-emerald-500 text-xs font-semibold tracking-widest uppercase mb-3">Por qué elegirnos</p>
-            <h2 className="text-3xl md:text-4xl font-bold text-white">Una nueva forma de habitar</h2>
+
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">¿Por qué Homested?</h2>
+            <p className="text-slate-500 text-base">Una nueva forma de habitar</p>
           </div>
 
           {/* Grid 3 cols */}
@@ -293,9 +330,56 @@ export default function Landing() {
       <section id="precios" className="py-20 px-6 bg-slate-800/50">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <p className="text-emerald-500 text-xs font-semibold tracking-widest uppercase mb-3">Tarifas</p>
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Precio por día decreciente</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Así funciona nuestro sistema de precios</h2>
             <p className="text-slate-400 text-base">Mientras más te quedes, más ahorras</p>
+          </div>
+
+          {/* Simulador */}
+          <div className="mb-6 bg-slate-800 rounded-2xl p-6 border border-slate-700">
+            <p className="text-slate-400 text-sm font-medium mb-4 uppercase tracking-widest">Simulador de precio</p>
+            <div className="flex flex-col md:flex-row md:items-center gap-6">
+              {/* Input días */}
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-white font-semibold text-sm">¿Cuántos días te quedas?</label>
+                  <span className="text-emerald-400 font-bold text-lg">{simDays} días</span>
+                </div>
+                <input
+                  type="range"
+                  min={1}
+                  max={365}
+                  value={simDays}
+                  onChange={(e) => setSimDays(parseInt(e.target.value))}
+                  className="w-full h-2 bg-slate-600 rounded-full appearance-none cursor-pointer accent-emerald-500"
+                />
+                <div className="flex justify-between text-slate-500 text-xs mt-1">
+                  <span>1 día</span>
+                  <span>365 días</span>
+                </div>
+              </div>
+
+              {/* Resultado */}
+              <div className="flex items-center gap-6 md:border-l md:border-slate-700 md:pl-6">
+                <div>
+                  <p className="text-slate-500 text-xs mb-0.5">{simTier.label} · precio/día</p>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-emerald-400 font-black text-3xl">
+                      ${simPriceDisplay.toLocaleString(currency === 'USD' ? 'en-US' : 'es-CL')}
+                    </span>
+                    <span className="text-slate-400 text-sm">{currency}/día</span>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-slate-500 text-xs mb-0.5">Total estimado</p>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-white font-bold text-xl">
+                      ${simTotalDisplay.toLocaleString(currency === 'USD' ? 'en-US' : 'es-CL')}
+                    </span>
+                    <span className="text-slate-400 text-xs">{currency}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="bg-slate-800 rounded-2xl p-8 border border-slate-700">
@@ -341,31 +425,35 @@ export default function Landing() {
       <section id="faq" className="py-20 px-6 bg-slate-900">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
-            <p className="text-emerald-500 text-xs font-semibold tracking-widest uppercase mb-3">FAQ</p>
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Preguntas frecuentes</h2>
+            <p className="text-slate-400 text-base">Resolvemos las dudas más comunes antes de empezar.</p>
           </div>
 
           <div className="space-y-2">
             {[
               {
                 q: '¿Necesito comprobante de ingresos?',
-                a: 'No. Solo necesitas una identificación oficial y completar la verificación digital. Sin papeles, sin burocracia.'
+                a: 'No. Solo necesitas tu cédula de identidad y completar la verificación digital. Sin papeleos ni trámites.'
               },
               {
                 q: '¿Cómo funciona el acceso digital?',
-                a: 'Recibes un código único que ingresarás en la cerradura inteligente del inmueble. Es personal e intransferible.'
+                a: 'Una vez confirmada tu reserva recibes un código único en tu correo. Ese código se ingresa en la cerradura inteligente del espacio. Es personal e intransferible.'
+              },
+              {
+                q: '¿Qué incluye el pago?',
+                a: 'Incluye el espacio amoblado y servicios básicos como luz, agua, gas e internet. No hay gastos extras ni gastos comunes: llegas y empiezas a vivir.'
               },
               {
                 q: '¿Puedo extender mi estadía?',
-                a: 'Sí. Puedes extender tu estadía en cualquier momento y el precio total se recalcula según la nueva duración, aplicando la tarifa correspondiente.'
+                a: 'Sí. Puedes extender tu estadía en cualquier momento. El sistema recalcula automáticamente el precio según la nueva duración.'
               },
               {
                 q: '¿Qué pasa si quiero irme antes?',
-                a: 'Puedes irte cuando quieras. Tu acceso se desactiva automáticamente al terminar tu período contratado.'
+                a: 'Puedes irte cuando quieras. Tu acceso se desactiva al finalizar el período contratado. Si decides irte antes, el 50% del valor de los días no utilizados queda como crédito para futuras estadías en Homested.'
               },
               {
                 q: '¿Por qué el precio baja si me quedo más tiempo?',
-                a: 'Premiamos el compromiso. Las estadías más largas reducen nuestros costos operativos, y trasladamos ese ahorro a ti.'
+                a: 'Las estadías más largas nos permiten operar de forma más eficiente. Ese ahorro se refleja en un menor precio por día.'
               },
             ].map((item, index) => {
               const isOpen = openFaq === index;
@@ -415,18 +503,20 @@ export default function Landing() {
         <div className="absolute inset-0 bg-gradient-to-r from-slate-900/60 via-transparent to-slate-900/60" />
 
         <div className="relative z-10 w-full max-w-2xl mx-auto text-center px-6 py-24">
-          <p className="text-emerald-400 text-xs font-semibold tracking-widest uppercase mb-4">Comienza hoy</p>
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-5 leading-tight">
             ¿Listo para entrar a vivir?
           </h2>
-          <p className="text-slate-300 text-lg mb-10">
-            Únete al nuevo paradigma habitacional. Sin complicaciones, sin esperas.
+          <p className="text-slate-300 text-lg mb-2">
+            Únete a quienes ya eligieron una forma más simple de habitar.
+          </p>
+          <p className="text-slate-300 text-base mb-10">
+            Sin papeleo, sin garantías, sin intermediarios.
           </p>
           <button
             onClick={handleCtaClick}
             className="px-10 py-4 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-lg rounded-xl transition-all active:scale-[0.98] shadow-xl shadow-emerald-500/30 hover:shadow-emerald-500/50"
           >
-            Entrar a vivir ahora
+            Entra a vivir hoy
           </button>
         </div>
       </section>

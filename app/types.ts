@@ -119,6 +119,7 @@ export interface AccommodationCategory {
   image: string;
   features: string[];
   icon: string;
+  maxPersons: number;
 }
 
 // ============================================

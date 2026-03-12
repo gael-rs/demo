@@ -107,24 +107,24 @@ export default function PropertyShowcase() {
   }
 
   const currentProperty = properties[currentIndex];
-  const regularPriceClp = Math.round(currentProperty.base_price_clp * 0.10);
-  const longStayPriceClp = Math.round(currentProperty.base_price_clp * 0.033);
-  const displayRegularPrice = convertPrice(regularPriceClp);
-  const displayLongStayPrice = convertPrice(longStayPriceClp);
+  const longStayPriceClp = Math.round(currentProperty.base_price_clp * 0.033); // siempre CLP
+
+  // Capacidad máxima por categoría (lógica de negocio: ROOMIE=1, PROFESSIONAL=2, STARTER=3)
+  const categoryMaxPersons: Record<string, number> = {
+    ROOMIE: 1, PROFESSIONAL: 2, STARTER: 3,
+  };
+  const maxPersons = currentProperty.category
+    ? (categoryMaxPersons[currentProperty.category.toUpperCase()] ?? 1)
+    : 1;
 
   return (
     <div className="max-w-7xl mx-auto">
       {/* Section Header */}
       <div className="text-center mb-12">
-        <p className="text-emerald-500 text-xs font-semibold tracking-widest uppercase mb-3">Inmuebles disponibles</p>
         <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">
           {properties.length === 1 ? 'Nuestro Inmueble Disponible' : 'Opciones Destacadas'}
         </h2>
-        <p className="text-slate-400 text-base">
-          {properties.length === 1
-            ? 'Departamento moderno listo para ti'
-            : 'Encuentra el hogar para esta etapa de tu vida.'}
-        </p>
+        <p className="text-slate-400 text-base">Explora algunos espacios disponibles</p>
       </div>
 
       {/* Carousel Container */}
@@ -183,60 +183,35 @@ export default function PropertyShowcase() {
               )}
 
               {/* Gradient Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent opacity-90" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
 
-              {/* Property Title Overlay */}
-              <div className="absolute bottom-0 left-0 right-0 p-6">
-                <h3 className="text-xl md:text-2xl font-bold text-white mb-2 drop-shadow-lg line-clamp-2">
-                  {currentProperty.name}
-                </h3>
-                <div className="flex items-center gap-2 text-emerald-400">
-                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <span className="text-white text-sm md:text-base font-medium line-clamp-1">{currentProperty.address}</span>
+              {/* Bottom strip: precio izq, personas der */}
+              <div className="absolute bottom-0 left-0 right-0 px-5 py-4 flex items-end justify-between">
+
+                {/* Precio — bottom-left */}
+                <div className="bg-black/35 backdrop-blur-md rounded-2xl px-4 py-3 border border-white/10 shadow-xl">
+                  <div className="text-white font-black text-3xl leading-none tracking-tight">
+                    ${longStayPriceClp.toLocaleString('es-CL')}
+                  </div>
+                  <div className="text-slate-300 text-sm font-medium mt-0.5">CLP/día</div>
+                  <div className="text-slate-400 text-xs mt-0.5">30+ días</div>
                 </div>
+
+                {/* Ícono persona + xN — bottom-right */}
+                <div className="bg-black/35 backdrop-blur-md rounded-2xl px-4 py-3 border border-white/10 shadow-xl flex items-center gap-2">
+                  {/* SVG persona (misma silueta que 👤) */}
+                  <svg className="w-9 h-9 text-white" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 12c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0 2c-3.33 0-10 1.67-10 5v2h20v-2c0-3.33-6.67-5-10-5z"/>
+                  </svg>
+                  <span className="text-white font-black text-2xl leading-none">×{maxPersons}</span>
+                </div>
+
               </div>
 
             </div>
 
             {/* Card Content */}
             <div className="p-6">
-              {/* Price */}
-              <div className="mb-4 pb-4 border-b border-slate-700/50">
-                <div className="flex items-stretch gap-3">
-                  {/* Regular price */}
-                  <div className="flex-1 px-3 py-2.5 rounded-xl bg-slate-700/40">
-                    <p className="text-slate-500 text-xs mb-1">1–7 días</p>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-slate-300 font-semibold text-lg">
-                        ${displayRegularPrice.toLocaleString(currency === 'USD' ? 'en-US' : 'es-CL')}
-                      </span>
-                      <span className="text-slate-500 text-xs">{currency}/día</span>
-                    </div>
-                  </div>
-
-                  {/* Arrow */}
-                  <div className="flex items-center text-slate-600">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
-                  </div>
-
-                  {/* Long-stay price */}
-                  <div className="flex-1 px-3 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                    <p className="text-emerald-500 text-xs mb-1">31–60 días</p>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-emerald-400 font-bold text-2xl">
-                        ${displayLongStayPrice.toLocaleString(currency === 'USD' ? 'en-US' : 'es-CL')}
-                      </span>
-                      <span className="text-slate-400 text-xs">{currency}/día</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
               {/* Description */}
               {currentProperty.description && (
                 <p className="text-slate-400 text-sm leading-relaxed mb-6">
@@ -245,22 +220,6 @@ export default function PropertyShowcase() {
                     : currentProperty.description}
                 </p>
               )}
-
-              {/* Stats */}
-              <div className="grid grid-cols-3 pb-6 border-b border-slate-700/50 mb-6">
-                <div className="flex flex-col items-center gap-1 py-2">
-                  <div className="text-emerald-400 font-bold text-2xl leading-none">{currentProperty.capacity}</div>
-                  <div className="text-slate-500 text-xs">Personas</div>
-                </div>
-                <div className="flex flex-col items-center gap-1 py-2 border-x border-slate-700">
-                  <div className="text-emerald-400 font-bold text-2xl leading-none">{currentProperty.bedrooms}</div>
-                  <div className="text-slate-500 text-xs">Dormitorios</div>
-                </div>
-                <div className="flex flex-col items-center gap-1 py-2">
-                  <div className="text-emerald-400 font-bold text-2xl leading-none">{currentProperty.bathrooms}</div>
-                  <div className="text-slate-500 text-xs">Baños</div>
-                </div>
-              </div>
 
               {/* CTA Button */}
               <button

@@ -14,7 +14,7 @@ export default function Header() {
     { label: '¿Cómo funciona?', href: '/#como-funciona' },
     { label: '¿Beneficios?', href: '/#beneficios' },
     { label: '¿Precios?', href: '/#precios' },
-    { label: 'FAQ', href: '/#faq' },
+    { label: 'Preguntas frecuentes', href: '/#faq' },
   ];
 
   const handleLoginClick = () => {

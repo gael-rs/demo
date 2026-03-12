@@ -4,6 +4,10 @@ import { useState } from 'react';
 import { useBooking } from '@/app/context';
 import PropertyShowcase from '@/app/features/properties/components/PropertyShowcase';
 import ShinyText from '@/app/shared/components/ShinyText';
+import FadeContent from '@/app/shared/components/FadeContent';
+import CountUp from '@/app/shared/components/CountUp';
+import SplitText from '@/app/shared/components/SplitText';
+import ScrollVelocity from '@/app/shared/components/ScrollVelocity';
 
 export default function Landing() {
   const { goToStep, currency, convertPrice } = useBooking();
@@ -98,9 +102,16 @@ export default function Landing() {
           <div className="relative z-10 flex items-center h-full w-full max-w-7xl mx-auto px-16 lg:px-20 pt-20">
             <div>
               <div className="mb-14">
-                <p className="text-4xl lg:text-5xl font-bold text-white leading-[1.05] mb-2 whitespace-nowrap">
-                  Entra a vivir en minutos
-                </p>
+                <SplitText
+                  text="Entra a vivir en minutos"
+                  tag="p"
+                  className="text-4xl lg:text-5xl font-bold text-white leading-[1.05] mb-2"
+                  splitType="words"
+                  duration={0.7}
+                  delay={80}
+                  from={{ opacity: 0, y: 24 }}
+                  to={{ opacity: 1, y: 0 }}
+                />
                 <ShinyText
                   text="Sin papeleo, sin intermediarios, sin fricción"
                   className="text-4xl lg:text-2xl font-medium leading-[1.35]"
@@ -109,9 +120,16 @@ export default function Landing() {
                 />
               </div>
               <div className="mb-10">
-                <p className="text-4xl lg:text-5xl font-bold text-emerald-400 leading-[1.05] mb-2 whitespace-nowrap">
-                  Quédate el tiempo que quieras
-                </p>
+                <SplitText
+                  text="Quédate el tiempo que quieras"
+                  tag="p"
+                  className="text-4xl lg:text-5xl font-bold text-emerald-400 leading-[1.05] mb-2"
+                  splitType="words"
+                  duration={0.7}
+                  delay={80}
+                  from={{ opacity: 0, y: 24 }}
+                  to={{ opacity: 1, y: 0 }}
+                />
                 <ShinyText
                   text="Un hogar que se adapta a tu etapa, no al revés"
                   className="text-4xl lg:text-2xl font-medium leading-[1.35]"
@@ -134,11 +152,24 @@ export default function Landing() {
 
       </section>
 
+      {/* Marquee strip */}
+      <div className="py-5 bg-slate-800 border-y border-slate-700/40 overflow-hidden">
+        <ScrollVelocity
+          baseVelocity={4}
+          className="text-slate-500 text-xs font-semibold tracking-widest uppercase"
+        >
+          Sin papeleo&nbsp;&nbsp;·&nbsp;&nbsp;Sin intermediarios&nbsp;&nbsp;·&nbsp;&nbsp;Sin fricción&nbsp;&nbsp;·&nbsp;&nbsp;Housing as a Living&nbsp;&nbsp;·&nbsp;&nbsp;Acceso digital&nbsp;&nbsp;·&nbsp;&nbsp;Sin garantías&nbsp;&nbsp;·&nbsp;&nbsp;
+        </ScrollVelocity>
+      </div>
+
       {/* Stats Section */}
       <section className="py-12 px-6 bg-slate-800/50">
-        <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
+        <FadeContent duration={800} className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
           <div className="text-center">
-            <p className="text-3xl md:text-4xl font-bold text-emerald-400">3 min</p>
+            <p className="text-3xl md:text-4xl font-bold text-emerald-400">
+              <CountUp to={3} duration={2} />
+              <span> min</span>
+            </p>
             <p className="text-slate-400 text-sm mt-1">Regístrate y activa tu acceso</p>
           </div>
           <div className="text-center">
@@ -150,20 +181,25 @@ export default function Landing() {
             <p className="text-slate-400 text-sm mt-1">Acceso digital</p>
           </div>
           <div className="text-center">
-            <p className="text-3xl md:text-4xl font-bold text-emerald-400">100%</p>
+            <p className="text-3xl md:text-4xl font-bold text-emerald-400">
+              <CountUp to={100} duration={2.5} />
+              <span>%</span>
+            </p>
             <p className="text-slate-400 text-sm mt-1">Ahorro por día en estadías largas</p>
           </div>
-        </div>
+        </FadeContent>
       </section>
 
       {/* Property Showcase */}
       <section className="py-20 px-6 bg-slate-900">
-        <PropertyShowcase />
+        <FadeContent duration={900} blur>
+          <PropertyShowcase />
+        </FadeContent>
       </section>
 
       {/* How it Works Section — fondo continuo con PropertyShowcase */}
       <section id="como-funciona" className="py-24 px-6 bg-slate-800/50">
-        <div className="max-w-5xl mx-auto">
+        <FadeContent duration={800} className="max-w-5xl mx-auto">
           <div className="text-center mb-14">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">¿Cómo funciona Homested?</h2>
             <p className="text-slate-500 text-base">Cuatro pasos simples para empezar tu próxima etapa</p>
@@ -231,12 +267,12 @@ export default function Landing() {
               </div>
             ))}
           </div>
-        </div>
+        </FadeContent>
       </section>
 
       {/* Benefits Section */}
       <section id="beneficios" className="py-24 px-6 bg-slate-900">
-        <div className="max-w-5xl mx-auto">
+        <FadeContent duration={800} className="max-w-5xl mx-auto">
           {/* Header */}
           <div className="text-center mb-14">
 
@@ -323,12 +359,12 @@ export default function Landing() {
               </div>
             ))}
           </div>
-        </div>
+        </FadeContent>
       </section>
 
       {/* Pricing Section */}
       <section id="precios" className="py-20 px-6 bg-slate-800/50">
-        <div className="max-w-4xl mx-auto">
+        <FadeContent duration={800} className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Así funciona nuestro sistema de precios</h2>
             <p className="text-slate-400 text-base">Mientras más te quedes, más ahorras</p>
@@ -418,12 +454,12 @@ export default function Landing() {
               })}
             </div>
           </div>
-        </div>
+        </FadeContent>
       </section>
 
       {/* FAQ Section */}
       <section id="faq" className="py-20 px-6 bg-slate-900">
-        <div className="max-w-3xl mx-auto">
+        <FadeContent duration={800} className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Preguntas frecuentes</h2>
             <p className="text-slate-400 text-base">Resolvemos las dudas más comunes antes de empezar.</p>
@@ -487,7 +523,7 @@ export default function Landing() {
               );
             })}
           </div>
-        </div>
+        </FadeContent>
       </section>
 
       {/* Final CTA Section */}

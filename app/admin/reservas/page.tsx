@@ -142,11 +142,11 @@ function BookingRow({
           <StatusPill status={booking.status} />
           {booking.identity_verified ? (
             <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-500/15 text-emerald-400 font-medium">
-              ID verificada
+              Biométrica: Aprobada
             </span>
           ) : (
-            <span className="px-2 py-0.5 rounded-full text-xs bg-slate-700 text-slate-500 font-medium">
-              Sin verificar
+            <span className="px-2 py-0.5 rounded-full text-xs bg-yellow-500/15 text-yellow-400 font-medium">
+              Biométrica: En proceso
             </span>
           )}
           <svg

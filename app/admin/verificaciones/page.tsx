@@ -2,17 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import {
-  getPendingVerifications,
   getAllVerifications,
-  approveVerification,
   rejectVerification,
 } from '@/app/features/identity/verification.service';
-import {
-  updateBookingStatus,
-  updateBookingIdentityVerification,
-  getBookingById,
-} from '@/app/features/booking/booking.service';
-import { generateAccessCodeWithLock } from '@/app/features/access/smartlock.service';
 import ImageViewer from '@/app/features/admin/components/ImageViewer';
 import { supabase } from '@/app/shared/lib/supabase';
 
@@ -62,21 +54,28 @@ export default function VerificationsPage() {
   const handleApprove = async (verificationId: string, bookingId: string) => {
     if (!currentUser) { showToast('Error: Usuario no autenticado', 'error'); return; }
     try {
-      await approveVerification(verificationId, currentUser.id);
-      await updateBookingIdentityVerification(bookingId, true);
-      await updateBookingStatus(bookingId, 'confirmed');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { showToast('Sesión expirada, recarga la página', 'error'); return; }
 
-      // Auto-generar código de acceso
-      const booking = await getBookingById(bookingId);
-      if (booking) {
-        await generateAccessCodeWithLock(bookingId, booking.property_id, booking.check_in, booking.check_out);
+      const response = await fetch('/api/admin/approve-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ verificationId, bookingId }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Error del servidor');
       }
 
       showToast('Verificación aprobada y código de acceso generado', 'success');
       await loadVerifications();
     } catch (error) {
       console.error('Error approving verification:', error);
-      showToast('Error al aprobar la verificación', 'error');
+      showToast(`Error al aprobar: ${error instanceof Error ? error.message : 'desconocido'}`, 'error');
     }
   };
 

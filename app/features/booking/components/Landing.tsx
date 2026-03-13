@@ -172,11 +172,10 @@ export default function Landing() {
       {/* Marquee strip */}
       <div className="py-5 bg-slate-800 border-y border-slate-700/40 overflow-hidden">
         <ScrollVelocity
-          baseVelocity={4}
+          texts={["Sin papeleo · Sin intermediarios · Sin fricción · Housing as a Living · Acceso digital · Sin garantías ·"]}
+          velocity={40}
           className="text-slate-500 text-xs font-semibold tracking-widest uppercase"
-        >
-          Sin papeleo&nbsp;&nbsp;·&nbsp;&nbsp;Sin intermediarios&nbsp;&nbsp;·&nbsp;&nbsp;Sin fricción&nbsp;&nbsp;·&nbsp;&nbsp;Housing as a Living&nbsp;&nbsp;·&nbsp;&nbsp;Acceso digital&nbsp;&nbsp;·&nbsp;&nbsp;Sin garantías&nbsp;&nbsp;·&nbsp;&nbsp;
-        </ScrollVelocity>
+        />
       </div>
 
       {/* Stats Section */}
